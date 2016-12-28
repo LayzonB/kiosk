@@ -19,6 +19,8 @@ class ListProducts(webapp2.RequestHandler):
       }
       data = stripe.Product.list(**params)
       self.response.write(data)
+      # for some reason json.dumps is not working here
+      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -30,6 +32,8 @@ class ViewProduct(webapp2.RequestHandler):
     try:
       data = stripe.Product.retrieve(product)
       self.response.write(data)
+      # for some reason json.dumps is not working here
+      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
