@@ -11,8 +11,16 @@ class ListProducts(webapp2.RequestHandler):
 
   def get(self):
     self.response.headers['Content-Type'] = 'application/json'
-    data = stripe.Product.list(limit=3)
-    self.response.write(data)
+    try:
+      params = {
+        "active": "true",
+        "limit": self.request.get('limit', 10),
+        "start": self.request.get('start', None)
+      }
+      data = stripe.Product.list(**params)
+      self.response.write(data)
+    except:
+      self.response.write('')
 
 
 class ViewProduct(webapp2.RequestHandler):
@@ -26,13 +34,13 @@ class ViewProduct(webapp2.RequestHandler):
       self.response.write('')
 
 
-class ViewOrder(webapp2.RequestHandler):
+class ViewAccount(webapp2.RequestHandler):
 
-  def get(self, order):
+  def get(self):
     self.response.headers['Content-Type'] = 'application/json'
     try:
-      data = stripe.Order.retrieve(order)
-      self.response.write(data)
+      data = stripe.Account.retrieve()
+      self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -40,49 +48,45 @@ class ViewOrder(webapp2.RequestHandler):
 class CreateOrder(webapp2.RequestHandler):
 
   def post(self):
-    order = stripe.Order.create(
-      currency="usd", 
-      items=[
-        {
-          "type": 'sku',
-          "parent": 'sku_9k2VoyfSbE3DEj',
-          "description": 'Name Blue T-Shirt',
-          "quantity": 5
-        }
-      ],
-      shipping={
-        "name":'Margot Robbie',
-        "address":{
-          "line1":'Rodeo Drive 42',
-          "city":'Beverly Hills',
-          "state": 'CA',
-          "country":'US',
-          "postal_code":'90210'
-        }
-      },
-      email='margotrobbie@example.com')
+    self.response.headers['Content-Type'] = 'application/json'
+    try:
+      params = json.loads(self.request.body)
+      # params filtering/cleanup/validation required
+      data = stripe.Order.create(**params)
+      self.response.write(json.dumps(data))
+    except:
+      self.response.write('')
 
 
-class Pay(webapp2.RequestHandler):
+class PayOrder(webapp2.RequestHandler):
 
   def post(self):
     self.response.headers['Content-Type'] = 'application/json'
-    cart = self.request.get('cart', None)
-    self.response.write(cart)
+    try:
+      params = json.loads(self.request.body)
+      # params filtering/cleanup/validation required
+      order = stripe.Order.retrieve(params.pop("order"))
+      data = order.pay(**params)
+      self.response.write(json.dumps(data))
+    except:
+      self.response.write('')
 
 
-class ListProductsJ(webapp2.RequestHandler):
+class ViewOrder(webapp2.RequestHandler):
 
-  def get(self):
+  def get(self, order):
     self.response.headers['Content-Type'] = 'application/json'
-    data = stripe.Product.list(limit=3)
-    self.response.write(json.dumps(data))
+    try:
+      data = stripe.Order.retrieve(order)
+      self.response.write(json.dumps(data))
+    except:
+      self.response.write('')
 
 
 APP = webapp2.WSGIApplication([webapp2.Route(r'/products', handler=ListProducts),
                               webapp2.Route(r'/product/<product:(.*)>', handler=ViewProduct),
-                              webapp2.Route(r'/order/<order:(.*)>', handler=ViewOrder),
-                              webapp2.Route(r'/j', handler=ListProductsJ),
+                              webapp2.Route(r'/account', handler=ViewAccount),
                               webapp2.Route(r'/order/create', handler=CreateOrder),
-                              webapp2.Route(r'/pay', handler=Pay)],
+                              webapp2.Route(r'/order/pay', handler=PayOrder),
+                              webapp2.Route(r'/order/<order:(.*)>', handler=ViewOrder)],
                               debug=True)
