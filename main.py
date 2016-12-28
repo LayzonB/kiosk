@@ -40,13 +40,35 @@ class ViewOrder(webapp2.RequestHandler):
 class CreateOrder(webapp2.RequestHandler):
 
   def post(self):
-    pass
+    order = stripe.Order.create(
+      currency="usd", 
+      items=[
+        {
+          "type": 'sku',
+          "parent": 'sku_9k2VoyfSbE3DEj',
+          "description": 'Name Blue T-Shirt',
+          "quantity": 5
+        }
+      ],
+      shipping={
+        "name":'Margot Robbie',
+        "address":{
+          "line1":'Rodeo Drive 42',
+          "city":'Beverly Hills',
+          "state": 'CA',
+          "country":'US',
+          "postal_code":'90210'
+        }
+      },
+      email='margotrobbie@example.com')
 
 
 class Pay(webapp2.RequestHandler):
 
   def post(self):
-    pass
+    self.response.headers['Content-Type'] = 'application/json'
+    cart = self.request.get('cart', None)
+    self.response.write(cart)
 
 
 class ListProductsJ(webapp2.RequestHandler):
@@ -60,5 +82,7 @@ class ListProductsJ(webapp2.RequestHandler):
 APP = webapp2.WSGIApplication([webapp2.Route(r'/products', handler=ListProducts),
                               webapp2.Route(r'/product/<product:(.*)>', handler=ViewProduct),
                               webapp2.Route(r'/order/<order:(.*)>', handler=ViewOrder),
-                              webapp2.Route(r'/j', handler=ListProductsJ)],
+                              webapp2.Route(r'/j', handler=ListProductsJ),
+                              webapp2.Route(r'/order/create', handler=CreateOrder),
+                              webapp2.Route(r'/pay', handler=Pay)],
                               debug=True)
