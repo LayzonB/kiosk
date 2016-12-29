@@ -1,0 +1,144 @@
+{
+  "site": "MIRACLESTYLE",
+  "logo": {
+    "width": "233.43px",
+    "height": "56px",
+    "src": "app/logo_470_cut.png",
+    "hdsrc": "app/logo_1200.png"
+  },
+  "fb_app_id": "472299066299918",
+  "modals": {
+    "cart": {
+      "items": {
+        "quantity": {
+          "label": "Quantity"
+        },
+        "amount": {
+          "label": "Amount"
+        },
+        "subtotal": {
+          "label": "Subtotal"
+        },
+        "summary": {
+          "label": "Summary",
+          "net_total": "Net total",
+          "shipping": "Shipping and handling",
+          "taxes": "Taxes",
+          "total": "Total"
+        }
+      },
+      "email": {
+        "label": "Email",
+        "instructions": {
+          "info": "Recipient's email address.",
+          "required": "This field requires \"text\" value!",
+          "minlength": "",
+          "maxlength": "",
+          "pattern": ""
+        }
+      },
+      "shipping": {
+        "label": "Shipping address",
+        "name": {
+          "label": "Name",
+          "instructions": {
+            "info": "Recipient's full name or business name.",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "phone": {
+          "label": "Phone",
+          "instructions": {
+            "info": "Recipient's phone number.",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "address": {
+          "country": {
+            "label": "Country",
+            "instructions": {
+              "info": "",
+              "required": "This field requires \"selection\" value!",
+              "minlength": "",
+              "maxlength": "",
+              "pattern": ""
+            }
+          },
+          "state": {
+            "label": "Region",
+            "instructions": {
+              "info": "",
+              "required": "This field requires \"text\" value!",
+              "minlength": "",
+              "maxlength": "",
+              "pattern": ""
+            }
+          },
+          "city": {
+            "label": "City",
+            "instructions": {
+              "info": "",
+              "required": "This field requires \"text\" value!",
+              "minlength": "",
+              "maxlength": "",
+              "pattern": ""
+            }
+          },
+          "postal_code": {
+            "label": "Postal code",
+            "instructions": {
+              "info": "",
+              "required": "This field requires \"text\" value!",
+              "minlength": "",
+              "maxlength": "",
+              "pattern": ""
+            }
+          },
+          "line1": {
+            "label": "Street",
+            "instructions": {
+              "info": "",
+              "required": "This field requires \"text\" value!",
+              "minlength": "",
+              "maxlength": "",
+              "pattern": ""
+            }
+          },
+          "line2": {
+            "label": "Street (optional)",
+            "instructions": {
+              "info": "",
+              "required": "",
+              "minlength": "",
+              "maxlength": "",
+              "pattern": ""
+            }
+          }
+        }
+      }
+    },
+    "product": {
+      "quantity": {
+        "label": "Quantity",
+        "instructions": {
+          "info": "",
+          "required": "This field requires \"quantity\" value!",
+          "minlength": "",
+          "maxlength": "",
+          "pattern": ""
+        }
+      },
+      "inventory": {
+        "in_stock": "In stock",
+        "limited": "Limited",
+        "out_of_stock": "Out of stock"
+      }
+    }
+  }
+}

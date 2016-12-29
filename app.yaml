@@ -20,6 +20,16 @@ libraries:
 - name: jinja2
   version: latest
 
+
 handlers:
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
+
+- url: /app
+  static_dir: static/app
+  
 - url: /.*
   script: main.APP
+  
+  

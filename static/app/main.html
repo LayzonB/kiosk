@@ -1,0 +1,152 @@
+<md-home settings="settings"></md-home>
+
+
+
+
+
+
+
+<md-full-screen ng-if="cartDialog.show" on-close="closeDialog('cartDialog')" side="'right'" active="cartDialog.active">
+  <md-app-bar>
+    <md-app-icon icon="'shopping_cart'"></md-app-icon>
+    <md-actions side="left" lines="4">
+      <button md-button-icon-flat md-content="arrow_back" ng-click="cartDialog.active = false"></button>
+    </md-actions>
+  </md-app-bar>
+  <md-page vertical-scroll="scroll" top="{{cart.products.top}}" bottom="{{cart.products.bottom}}">
+    <md-cards>
+      <md-cards-item-multiline>
+        <md-base md-pad="24,16">
+          <md-base md-font="headline">Product</md-base>
+          <md-base md-font="secondary" md-pad="0,0,16,0">Product</md-base>
+        </md-base>
+      </md-cards-item-multiline>
+    </md-cards>
+    <md-list>
+      <md-list-item-multiline-clickable value="'address'" on-click="cart.progress(value)">
+        <md-base md-font="body2" md-misc="textCenter">
+          PROCEED TO CHECKOUT
+        </md-base>
+        <div style="width: 0px;
+                    height: 0px;
+                    border-left: 72px solid transparent;
+                    border-right: 72px solid transparent;
+                    border-top: 36px solid rgba(0, 0, 0, 0.54);
+                    margin: auto;"></div>
+      </md-list-item-multiline-clickable>
+    </md-list>
+  </md-page>
+  <md-page vertical-scroll="scroll" top="{{cart.address.top}}" bottom="{{cart.address.bottom}}">
+    <md-list name="settings.modals.cart.shipping.label">
+      <md-form name="'myForm'" on-init="cart.register(validator)">
+        <md-list-item-clickable first="settings.modals.cart.shipping.address.country.label"
+                                second="order.shipping.address.country.name"
+                                value="order.shipping.address.country.code"
+                                icon="'chevron_right'"
+                                icon-position="'right'"
+                                on-click="openDialog('simpleDialog')"></md-list-item-clickable>
+        <md-selection-input name="'country'"
+                            required="true"
+                            trim="true"
+                            label="settings.modals.cart.shipping.address.country.label"
+                            instructions="settings.modals.cart.shipping.address.country.instructions"
+                            value="order.shipping.address.country.code"
+                            display="order.shipping.address.country.name"
+                            on-click="openDialog('simpleDialog')"></md-selection-input>
+        <md-text-input name="'state'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.shipping.address.state.label"
+                       instructions="settings.modals.cart.shipping.address.state.instructions"
+                       value="order.shipping.address.state"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'city'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.shipping.address.city.label"
+                       instructions="settings.modals.cart.shipping.address.city.instructions"
+                       value="order.shipping.address.city"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'postal_code'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.shipping.address.postal_code.label"
+                       instructions="settings.modals.cart.shipping.address.postal_code.instructions"
+                       value="order.shipping.address.postal_code"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'line1'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.shipping.address.line1.label"
+                       instructions="settings.modals.cart.shipping.address.line1.instructions"
+                       value="order.shipping.address.line1"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'line2'"
+                       required="false"
+                       trim="true"
+                       label="settings.modals.cart.shipping.address.line2.label"
+                       instructions="settings.modals.cart.shipping.address.line2.instructions"
+                       value="order.shipping.address.line2"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'name'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.shipping.name.label"
+                       instructions="settings.modals.cart.shipping.name.instructions"
+                       value="order.shipping.name"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'email'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.email.label"
+                       instructions="settings.modals.cart.email.instructions"
+                       value="order.email"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-text-input name="'phone'"
+                       required="true"
+                       trim="true"
+                       label="settings.modals.cart.shipping.phone.label"
+                       instructions="settings.modals.cart.shipping.phone.instructions"
+                       value="order.shipping.phone"
+                       on-change="cart.update_shipping(name, value)"></md-text-input>
+        <md-radio-input name="'Foo'" required="true" first="'Foo'" second="'Sub'" third="'Sub Sub'" value="radio" sample="'Foo'" on-select="update_radio(sample)"></md-radio-input>
+        <md-radio-input name="'Bar'" required="true" first="'Bar'" second="'Sub'" value="radio" sample="'Bar'" on-select="update_radio(sample)"></md-radio-input>
+        <md-radio-input name="'Far'" required="true" first="'Far'" value="radio" sample="'Far'" on-select="update_radio(sample)"></md-radio-input>
+        <md-list-item-clickable first="submitLine"
+                                text-center="true"
+                                value="'A'"
+                                on-click="cart.submit(value)">
+        </md-list-item-clickable>
+        <md-list-item-multiline>
+          {{order_results}}
+        </md-list-item-multiline>
+      </md-form>
+    </md-list>
+    <md-list>
+      <md-list-item-multiline-clickable>
+        <md-base md-font="body2" md-misc="textCenter">
+          PROCEED TO CHECKOUT
+        </md-base>
+        <div style="width: 0px;
+                    height: 0px;
+                    border-left: 72px solid transparent;
+                    border-right: 72px solid transparent;
+                    border-top: 36px solid rgba(0, 0, 0, 0.54);
+                    margin: auto;"></div>
+      </md-list-item-multiline-clickable>
+    </md-list>
+  </md-page>
+</md-full-screen>
+
+<md-simple ng-if="simpleDialog.show" on-close="closeDialog('simpleDialog')" active="simpleDialog.active">
+  <md-page vertical-scroll="scroll">
+    <md-list>
+      <md-subheader md-content="{{options_title}}"></md-subheader>
+      <md-list-item-clickable ng-repeat="item in options"
+                              first="item"
+                              value="item"
+                              on-click="option_callback(value)">
+      </md-list-item-clickable>
+    </md-list>
+  </md-page>
+</md-simple>
