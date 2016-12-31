@@ -5,22 +5,8 @@
     
     <link href="https://file.myfontastic.com/n6vo44Re5QaWo8oCKShBs7/icons.css" rel="stylesheet">
     
-    <title>{{settings.site}}</title>
-    <meta name="description" content="{{settings.site}}">
-    
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="{{settings.site}}" />
-    <meta property="og:url" content="{{settings.url}}" />
-    <meta property="og:title" content="{{settings.site}}" />
-    <meta property="og:image" content="{{settings.image}}" />
-    <meta property="fb:app_id" content="{{settings.fb_app_id}}" />
-    
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:site" content="{{settings.site}}" />
-    <meta name="twitter:creator" content="{{settings.site}}">
-    <meta name="twitter:title" content="{{settings.site}}" />
-    <meta name="twitter:description" content="{{settings.site}}" />
-    <meta name="twitter:image" content="{{settings.image}}" />
+    <title>{{account.business_name}}</title>
+    <meta name="description" content="{{account.business_name}}">
     
     <meta id="is-landscape">
     <meta id="is-mobile">
@@ -29,12 +15,12 @@
     <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="fragment" content="!">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="{{settings.site}}">
+    <meta name="application-name" content="{{account.business_name}}">
     
     <base href="/">
   </head>
   <body style="margin: 0; padding: 0;">
-    <div ng-include="'app/main.html'"></div>
+    <md-home></md-home>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js" charset="UTF-8" type="application/javascript"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js" charset="UTF-8" type="application/javascript"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-route.js" charset="UTF-8" type="application/javascript"></script>

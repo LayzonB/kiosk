@@ -44,7 +44,9 @@ class ViewAccount(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = stripe.Account.retrieve()
-      self.response.write(json.dumps(data))
+      self.response.write(data)
+      # for some reason json.dumps is not working here
+      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -57,7 +59,9 @@ class CreateOrder(webapp2.RequestHandler):
       params = json.loads(self.request.body)
       # params filtering/cleanup/validation required
       data = stripe.Order.create(**params)
-      self.response.write(json.dumps(data))
+      self.response.write(data)
+      # for some reason json.dumps is not working here
+      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -71,7 +75,9 @@ class PayOrder(webapp2.RequestHandler):
       # params filtering/cleanup/validation required
       order = stripe.Order.retrieve(params.pop("order"))
       data = order.pay(**params)
-      self.response.write(json.dumps(data))
+      self.response.write(data)
+      # for some reason json.dumps is not working here
+      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -82,7 +88,9 @@ class ViewOrder(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = stripe.Order.retrieve(order)
-      self.response.write(json.dumps(data))
+      self.response.write(data)
+      # for some reason json.dumps is not working here
+      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 

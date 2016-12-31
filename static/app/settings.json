@@ -1,14 +1,21 @@
 {
-  "site": "MIRACLESTYLE",
-  "logo": {
-    "width": "233.43px",
-    "height": "56px",
-    "src": "app/logo_470_cut.png",
-    "hdsrc": "app/logo_1200.png"
-  },
-  "fb_app_id": "472299066299918",
   "modals": {
     "cart": {
+      "empty": "Shopping cart empty",
+      "delete": {
+        "title": "Empty the cart at once?",
+        "message": "If you empty the cart all of its items and settings will be lost permanently.",
+        "buttons": {
+          "cancel": "Cancel",
+          "ok": "Empty"
+        }
+      },
+      "steps": {
+        "products": "Proceed to Checkout",
+        "shipping": "Select Shipping Method",
+        "methods": "Review Cart",
+        "review": "Pay"
+      },
       "items": {
         "quantity": {
           "label": "Quantity"
@@ -121,19 +128,12 @@
             }
           }
         }
+      },
+      "shipping_methods": {
+        "label": "Shipping methods"
       }
     },
     "product": {
-      "quantity": {
-        "label": "Quantity",
-        "instructions": {
-          "info": "",
-          "required": "This field requires \"quantity\" value!",
-          "minlength": "",
-          "maxlength": "",
-          "pattern": ""
-        }
-      },
       "inventory": {
         "in_stock": "In stock",
         "limited": "Limited",

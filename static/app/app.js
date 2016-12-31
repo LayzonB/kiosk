@@ -12,67 +12,252 @@ mdApp.run([function(){
   
 }]);
 
+/*--------------------------------------------------Services--------------------------------------------------*/
+
+mdApp.factory('mdCartFactory', ['$http', function($http) {
+  
+  var setupCart = function() {
+    var cart = {
+      'currency': '',
+      'coupon': '',
+      'email': '',
+      'items': [],
+      'metadata': {},
+      'shipping': {
+        'name': '',
+        'phone': '',
+        'address': {
+          'country': '',
+          'state': '',
+          'city': '',
+          'postal_code': '',
+          'line1': '',
+          'line2': ''
+        }
+      }
+    };
+    return cart;
+  };
+  
+  var buildOrder = function(cart) {
+    var order = {
+      'currency': '',
+      'email': '',
+      'items': [],
+      'shipping': {
+        'name': '',
+        'phone': '',
+        'address': {
+          'country': '',
+          'state': '',
+          'city': '',
+          'postal_code': '',
+          'line1': '',
+          'line2': ''
+        }
+      }
+    };
+    order.currency = cart.currency;
+    if (cart.coupon) {
+      order.coupon = cart.coupon;
+    }
+    order.email = cart.email;
+    angular.forEach(cart.items, function(item) {
+      var newItem = {
+        'type': item.type,
+        'parent': item.parent,
+        'quantity': item.quantity
+      };
+      order.items.push(newItem);
+    });
+    order.shipping.name = cart.shipping.name;
+    order.shipping.phone = cart.shipping.phone;
+    order.shipping.address.country = cart.shipping.address.country;
+    order.shipping.address.state = cart.shipping.address.state;
+    order.shipping.address.city = cart.shipping.address.city;
+    order.shipping.address.postal_code = cart.shipping.address.postal_code;
+    order.shipping.address.line1 = cart.shipping.address.line1;
+    order.shipping.address.line2 = cart.shipping.address.line2;
+    return order;
+  };
+  
+  var createOrder = function(cart) {
+    var order = buildOrder(cart);
+    $http.post('order/create', order, {'cache': true}).then(function(response) {
+      order = response.data;
+      return order;
+    });
+  };
+  
+  var updateOrder = function(cart) {
+    if (cart.id) {
+      $http.get('order/' + cart.id.toString(), {'cache': true}).then(function(response) {
+        var order = response.data;
+        return order;
+      });
+    }
+  };
+  
+  var getCartItemQuantity = function(cart, skuId) {
+    var quantity = 0;
+    angular.forEach(cart.items, function(item, key) {
+      if ((item.type === 'sku') && (item.parent === skuId)) {
+        quantity = item.quantity;
+      }
+    });
+    return quantity;
+  };
+  
+  var updateCartItem = function(cart, product, sku, quantity) {
+    if (typeof quantity === 'number') {
+      var newItem = {
+        'type': 'sku',
+        'parent': sku.id,
+        'quantity': quantity,
+        'amount': sku.price,
+        'currency': sku.currency,
+        'description': product.name,
+        'product': product.id
+      };
+      var updated = false;
+      angular.forEach(cart.items, function(item, key) {
+        if ((item.type === 'sku') && (item.parent === sku.id)) {
+          updated = true;
+          if (quantity > 0) {
+            cart.items[key] = newItem;
+          } else {
+            cart.items.splice(key, 1);
+          }
+        }
+      });
+      if (!updated && (quantity > 0)) {
+        cart.items.push(newItem);
+      }
+      return cart;
+    }
+  };
+  
+  var updateCartShipping = function(cart, name, value) {
+    if (name === 'country') {
+      cart.shipping.address.country = value;
+    }
+    if (name === 'state') {
+      cart.shipping.address.state = value;
+    }
+    if (name === 'city') {
+      cart.shipping.address.city = value;
+    }
+    if (name === 'postal_code') {
+      cart.shipping.address.postal_code = value;
+    }
+    if (name === 'line1') {
+      cart.shipping.address.line1 = value;
+    }
+    if (name === 'line2') {
+      cart.shipping.address.line2 = value;
+    }
+    if (name === 'name') {
+      cart.shipping.name = value;
+    }
+    if (name === 'phone') {
+      cart.shipping.phone = value;
+    }
+    if (name === 'email') {
+      cart.email = value;
+    }
+    return cart;
+  };
+  
+  var updateCartShippingMethods = function(cart, value) {
+    angular.forEach(cart.shipping_methods, function(method) {
+      if (value === method.id) {
+        cart.selected_shipping_method = method.id;
+      }
+    });
+    return cart;
+  };
+  
+  return {
+    'setupCart': setupCart,
+    'buildOrder': buildOrder,
+    'createOrder': createOrder,
+    'updateOrder': updateOrder,
+    'getCartItemQuantity': getCartItemQuantity,
+    'updateCartItem': updateCartItem,
+    'updateCartShipping': updateCartShipping,
+    'updateCartShippingMethods': updateCartShippingMethods
+  };
+  
+}]);
+
 /*--------------------------------------------------Filters--------------------------------------------------*/
 
-mdApp.filter('currencyFormater', [function() {
+mdApp.filter('formatCountry', [function() {
+  return function(input, countries) {
+    var output = '';
+    angular.forEach(countries, function(country){
+      if (country.code === input) {
+        output = country.name;
+      }
+    });
+    return output;
+  };
+}]);
+
+mdApp.filter('formatCurrency', [function() {
   return function(input, currency) {
-    input = parseFloat(input) || 0;
-    var output = currency.code;
+    var output = parseFloat(input) || 0;
     var formater = '1';
     for (var i = 0; i < currency.decimal_digits; i++) {
       formater = formater + '0';
     }
     formater = parseInt(formater);
-    input = input / formater;
-    input = input.toFixed(currency.decimal_digits);
+    output = output / formater;
+    output = output.toFixed(currency.decimal_digits);
+    output = output.toString();
+    return output;
+  };
+}]);
+
+mdApp.filter('formatCurrencyPrefix', [function() {
+  return function(input, currency) {
+    var output = currency.code;
     output = output + input.toString();
     return output;
   };
 }]);
 
-mdApp.filter('inventoryFormater', [function() {
-  return function(inventory, settings, print) {
+mdApp.filter('formatInventory', [function() {
+  return function(inventory) {
     var output = '';
     if (inventory.type === 'infinite') {
-      if (print) {
-        output = 'in_stock';
-      } else {
-        output = Infinity;
-      }
+      output = Infinity;
+      
     } else if (inventory.type === 'bucket') {
-      if (print) {
-        output = inventory.value;
-      } else {
-        output = (inventory.value === 'out_of_stock') ? 0 : Infinity;
-      }
+      output = (inventory.value === 'out_of_stock') ? 0 : Infinity;
+      
     } else if (inventory.type === 'finite') {
-      if (print) {
-        output = (inventory.quantity > 0) ? 'in_stock' : 'out_of_stock';
-      } else {
-        output = inventory.quantity;
-      }
-    }
-    if (settings && print) {
-      return settings[output];
+      output = inventory.quantity;
     }
     return output;
   };
 }]);
 
-mdApp.filter('imagesFormater', [function() {
-  return function(skuImage, productImages) {
-    var output = [];
-    if (skuImage) {
-      output.push(skuImage);
+mdApp.filter('formatAvailability', [function() {
+  return function(inventory, dictionary) {
+    var output = '';
+    if (inventory.type === 'infinite') {
+      output = 'in_stock';
+    } else if (inventory.type === 'bucket') {
+      output = inventory.value;
+    } else if (inventory.type === 'finite') {
+      output = (inventory.quantity > 0) ? 'in_stock' : 'out_of_stock';
     }
-    if (productImages) {
-      angular.forEach(productImages, function(image) {
-        if (skuImage !== image) {
-          output.push(image);
-        }
-      });
+    if (dictionary) {
+      return dictionary[output];
+    } else {
+      return output;
     }
-    return output;
   };
 }]);
 
@@ -165,6 +350,20 @@ mdApp.component('mdSimple', {
               <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
               <md-simple-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-simple-sheet>
             </md-simple-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdConfirmation', {
+  template: `<md-confirmation-case>
+              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
+              <md-confirmation-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-confirmation-sheet>
+            </md-confirmation-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
   bindings: {
@@ -563,122 +762,6 @@ mdApp.component('mdRadioInput', {
   }
 });
 
-mdApp.component('mdNumberInput', {
-  template: `<md-list-cell>
-                <md-base md-pad="0,16">
-                  <md-input-label focus="true"
-                                  md-content="{{$ctrl.label}}"
-                                  md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
-                  </md-input-label>
-                </md-base>
-                <md-action md-pad="0,4">
-                  <button md-button-icon-flat md-content="remove" ng-click="$ctrl.remove()"
-                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
-                  <input name="{{$ctrl.name}}"
-                         type="text"
-                         readonly
-                         md-input-number
-                         md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"
-                         ng-model="$ctrl.value"
-                         ng-model-options="{allowInvalid: false}"
-                         ng-disabled="$ctrl.disabled"
-                         ng-required="$ctrl.required"
-                         ng-trim="$ctrl.trim"
-                         ng-min="$ctrl.min"
-                         ng-max="$ctrl.max"
-                         ng-step="$ctrl.step"
-                         ng-change="$ctrl.qchange()">
-                  <button md-button-icon-flat md-content="add" ng-click="$ctrl.add()"
-                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
-                </md-action>
-                <md-base md-pad="0,16">
-                  <md-input-helper md-content="{{$ctrl.instruction}}"
-                                   md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
-                  </md-input-helper>
-                </md-base>
-            </md-list-cell>`,
-  require: {'form': '^^mdForm'},
-  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
-    var ctrl = this;
-    ctrl.$postLink = function() {
-      ctrl.input = ctrl.form.getInput(ctrl);
-      ctrl.instruction = ctrl.instructions['info'];
-    };
-    ctrl.$onInit = function() {
-      if (isNaN(ctrl.min)) {
-        ctrl.min = 0;
-      }
-      if (isNaN(ctrl.max)) {
-        ctrl.max = Infinity;
-      }
-      if (isNaN(ctrl.step)) {
-        ctrl.step = 1;
-      }
-      if (isNaN(ctrl.value)) {
-        if (ctrl.required) {
-          ctrl.value = ctrl.min;
-        } else {
-          ctrl.value = '';
-        }
-      }
-      ctrl.onChange({'name': ctrl.name, 'value': ctrl.value});
-    };
-    ctrl.add = function() {
-      ctrl.value = parseFloat(ctrl.value) + parseFloat(ctrl.step);
-      ctrl.check();
-      ctrl.onChange({'name': ctrl.name, 'value': ctrl.value});
-    };
-    ctrl.remove = function() {
-      ctrl.value = parseFloat(ctrl.value) - parseFloat(ctrl.step);
-      ctrl.check();
-      ctrl.onChange({'name': ctrl.name, 'value': ctrl.value});
-    };
-    ctrl.check = function() {
-      ctrl.value = parseFloat(ctrl.value);
-      if (isNaN(ctrl.value)) {
-        ctrl.value = ctrl.min;
-      } else {
-        if (ctrl.value < ctrl.min) {
-          if (ctrl.required) {
-            ctrl.value = ctrl.min;
-          } else {
-            ctrl.value = '';
-          }
-        } else if (ctrl.value > ctrl.max) {
-          ctrl.value = ctrl.max;
-        }
-      }
-    };
-    ctrl.$doCheck = function() {
-      if (ctrl.input) {
-        ctrl.instruction = '';
-        if (ctrl.input.$dirty && ctrl.input.$invalid) {
-          angular.forEach(ctrl.input.$error, function(value, key) {
-            if (value) {
-              ctrl.instruction = ctrl.instruction + ' ' + ctrl.instructions[key];
-            }
-          });
-        }
-        if (!ctrl.instruction) {
-          ctrl.instruction = ctrl.instructions['info'];
-        }
-      }
-    };
-  }],
-  bindings: {
-    label: '<',
-    name: '<',
-    value: '<',
-    onChange: '&',
-    required: '<',
-    trim: '<',
-    min: '<',
-    max: '<',
-    step: '<',
-    instructions: '<'
-  }
-});
-
 mdApp.component('mdForm', {
   template: `<form md-base
                    name="{{$ctrl.name}}"
@@ -747,7 +830,7 @@ mdApp.component('mdCartPage', {
   template: `<md-page vertical-scroll="scroll" top="{{$ctrl.top}}" bottom="{{$ctrl.bottom}}" ng-transclude>
             </md-page>`,
   transclude: true,
-  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
     ctrl.$onInit = function() {
@@ -775,42 +858,42 @@ mdApp.component('mdCartPage', {
   }
 });
 
-mdApp.component('mdCartProducts', {
-  template: `<md-cart-page page="1" current-page="$ctrl.step">
-              <md-cards>
-                <md-cards-item-multiline-clickable ng-repeat="item in $ctrl.items" value="item" on-click="">
-                  <md-base md-pad="24,16">
-                    <md-base md-font="headline" md-content="{{item.sku.name}}"></md-base>
-                    <md-base md-font="secondary" md-content="{{item.parent}}" md-pad="0,0,16,0"></md-base>
-                    <md-action side="right">
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td md-font="secondary" md-misc="textRight" md-pad="0,16,0,0" md-content="{{$ctrl.settings.modals.cart.items.amount.label}}"></td>
-                          <td md-font="secondary" md-misc="textRight" md-pad="0" md-content="{{item.sku.priceView}}"></td>
-                        </tr>
-                        <tr>
-                          <td md-font="secondary" md-misc="textRight" md-pad="0,16,0,0" md-content="{{$ctrl.settings.modals.cart.items.quantity.label}}"></td>
-                          <td md-font="secondary" md-misc="textRight" md-pad="0" md-content="{{item.quantity}}"></td>
-                        </tr>
-                        <tr>
-                          <td md-font="secondary" md-misc="textRight" md-pad="0,16,0,0" md-content="{{$ctrl.settings.modals.cart.items.subtotal.label}}"></td>
-                          <td md-font="secondary" md-misc="textRight" md-pad="0" md-content="{{item.sku.subtotal}}"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    </md-action>
-                  </md-base>
-                </md-cards-item-multiline>
-              </md-cards>
-              <md-cart-button name="'PROCEED to CHECKOUT'"></md-cart-button>
-            </md-cart-page>`,
-  transclude: true,
-  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+mdApp.component('mdCartDelete', {
+  template: `<md-confirmation active="$ctrl.dialog" on-close="$ctrl.onClose({value: $ctrl.delete})">
+              <md-base md-pad="24">
+                <md-base md-font="title"
+                         md-pad="0,0,20,0"
+                         md-content="{{$ctrl.settings.modals.cart.delete.title}}"></md-base>
+                <md-base md-font="notification"
+                         md-content="{{$ctrl.settings.modals.cart.delete.message}}"></md-base>
+              </md-base>
+              <md-base md-pad="2,4">
+                <md-action side="right">
+                  <button md-button-text-flat
+                          ng-click="$ctrl.cancel()"
+                          md-content="{{$ctrl.settings.modals.cart.delete.buttons.cancel}}"></button>
+                  <button md-button-text-flat
+                          ng-click="$ctrl.ok()"
+                          md-content="{{$ctrl.settings.modals.cart.delete.buttons.ok}}"></button>
+                </md-action>
+              </md-base>
+            </md-confirmation>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
     ctrl.$onInit = function() {
-      
+      ctrl.dialog = true;
+      ctrl.delete = false;
+    };
+    
+    ctrl.cancel = function() {
+      ctrl.delete = false;
+      ctrl.dialog = false;
+    };
+    
+    ctrl.ok = function() {
+      ctrl.delete = true;
+      ctrl.dialog = false;
     };
     
     ctrl.$onChanges = function(changes) {
@@ -819,60 +902,110 @@ mdApp.component('mdCartProducts', {
   }],
   bindings: {
     settings: '<',
-    items: '<',
-    step: '<'
+    onClose: '&'
   }
 });
 
-mdApp.component('mdCartShipping', {
-  template: `<md-cart-page page="1" current-page="$ctrl.step">
-              <md-cards>
-                <md-cards-item-multiline-clickable>
-                  <md-base md-pad="24,16">
-                    <md-base md-font="headline">Product</md-base>
-                    <md-base md-font="secondary" md-pad="0,0,16,0">Product</md-base>
-                  </md-base>
-                </md-cards-item-multiline>
-              </md-cards>
-              <md-cart-button name="'PROCEED to CHECKOUT'"></md-cart-button>
-            </md-cart-page>`,
-  transclude: true,
-  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+mdApp.component('mdCartCountries', {
+  template: `<md-simple on-close="$ctrl.onSelect({value: $ctrl.option})" active="!$ctrl.option">
+              <md-page vertical-scroll="scroll">
+                <md-list>
+                  <md-list-item-clickable ng-repeat="option in $ctrl.settings.countries"
+                                          first="option.name"
+                                          value="option.code"
+                                          sample="$ctrl.sample"
+                                          disabled="option.disabled"
+                                          on-click="$ctrl.selectOption(value)">
+                  </md-list-item-clickable>
+                </md-list>
+              </md-page>
+            </md-simple>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
-    ctrl.$onInit = function() {
-      
+    ctrl.selectOption = function(value) {
+      ctrl.option = value;
     };
     
-    ctrl.$onChanges = function(changes) {
-      
+    ctrl.$onInit = function() {
+      ctrl.option = false;
     };
   }],
   bindings: {
-    step: '<',
+    settings: '<',
+    sample: '<',
+    onSelect: '&'
   }
 });
 
-mdApp.component('mdCart', {
-  template: `<md-full-screen side="'right'" active="$ctrl.dialog" on-close="$ctrl.onExit()">
-              <md-app-bar>
-                <md-app-icon icon="'shopping_cart'"></md-app-icon>
-                <md-actions side="left" lines="4">
-                  <button md-button-icon-flat md-content="arrow_back" ng-click="$ctrl.closeCart()"></button>
-                </md-actions>
-              </md-app-bar>
-              <md-cart-products step="$ctrl.step" ng-if="$ctrl.step === 1" settings="$ctrl.settings" items="$ctrl.cart.items"></md-cart-products>
-            </md-full-screen>`,
-  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+mdApp.component('mdCartEmpty', {
+  template: `<md-cart-page page="-1" current-page="-1">
+              <md-list>
+                <md-list-item-multiline>
+                  <md-base md-font="display1" md-misc="textCenter" md-pad="0,24" md-content="{{$ctrl.settings.modals.cart.empty}}">
+                  </md-base>
+                </md-list-item-multiline>
+              </md-list>
+            </md-cart-page>`,
+  bindings: {
+    settings: '<'
+  }
+});
+
+mdApp.component('mdCartProducts', {
+  template: `<md-cart-page page="1" current-page="$ctrl.step">
+              <md-cards>
+                <md-cards-item-multiline-clickable ng-repeat="item in $ctrl.cart.items"
+                                                   value="item" on-click="$ctrl.onSelect({productId: value.product, skuId: value.parent})">
+                  <md-base md-pad="24,16">
+                    <md-base md-font="headline" md-content="{{item.description}}"></md-base>
+                    <md-base md-font="secondary" md-content="{{item.parent}}" md-pad="0,0,16,0"></md-base>
+                    <md-action side="right">
+                    <table>
+                      <tbody>
+                        <tr>
+                          <td md-font="secondary"
+                              md-misc="textRight"
+                              md-pad="0,16,0,0"
+                              md-content="{{$ctrl.settings.modals.cart.items.amount.label}}"></td>
+                          <td md-font="secondary"
+                              md-misc="textRight"
+                              md-pad="0"
+                              md-content="{{item.amount | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()]}}"></td>
+                        </tr>
+                        <tr>
+                          <td md-font="secondary"
+                              md-misc="textRight"
+                              md-pad="0,16,0,0"
+                              md-content="{{$ctrl.settings.modals.cart.items.quantity.label}}"></td>
+                          <td md-font="secondary"
+                              md-misc="textRight"
+                              md-pad="0"
+                              md-content="{{item.quantity}}"></td>
+                        </tr>
+                        <tr>
+                          <td md-font="secondary"
+                              md-misc="textRight"
+                              md-pad="0,16,0,0"
+                              md-content="{{$ctrl.settings.modals.cart.items.subtotal.label}}"></td>
+                          <td md-font="secondary"
+                              md-misc="textRight"
+                              md-pad="0" md-content="{{(item.amount * item.quantity) | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()]}}"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    </md-action>
+                  </md-base>
+                </md-cards-item-multiline>
+              </md-cards>
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.products"
+                              on-click="$ctrl.onNextStep()"></md-cart-button>
+            </md-cart-page>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
-    ctrl.closeCart = function() {
-      ctrl.dialog = false;
-    };
-    
     ctrl.$onInit = function() {
-      ctrl.dialog = true;
-      ctrl.step = 1;
+      
     };
     
     ctrl.$onChanges = function(changes) {
@@ -882,11 +1015,273 @@ mdApp.component('mdCart', {
   bindings: {
     settings: '<',
     cart: '<',
+    step: '<',
+    onSelect: '&',
+    onNextStep: '&'
+  }
+});
+
+mdApp.component('mdCartShipping', {
+  template: `<md-cart-page page="2" current-page="$ctrl.step">
+              <md-list>
+                <md-list-subheader md-content="{{$ctrl.settings.modals.cart.shipping.label}}"></md-list-subheader>
+                <md-form name="'cartShippingForm'" on-init="$ctrl.register(validator)">
+                  <md-list-item-clickable first="$ctrl.settings.modals.cart.shipping.address.country.label"
+                                          second="$ctrl.cart.shipping.address.country | formatCountry:$ctrl.settings.countries"
+                                          value="$ctrl.cart.shipping.address.country"
+                                          icon="'chevron_right'"
+                                          icon-position="'right'"
+                                          on-click="$ctrl.onOpenCountries({value: value})"></md-list-item-clickable>
+                  <md-selection-input name="'country'"
+                                      required="true"
+                                      trim="true"
+                                      label="$ctrl.settings.modals.cart.shipping.address.country.label"
+                                      instructions="$ctrl.settings.modals.cart.shipping.address.country.instructions"
+                                      value="$ctrl.cart.shipping.address.country"
+                                      display="$ctrl.cart.shipping.address.country | formatCountry:$ctrl.settings.countries"
+                                      on-click="$ctrl.onOpenCountries({value: value})"></md-selection-input>
+                  <md-text-input name="'state'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.address.state.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.address.state.instructions"
+                                 value="$ctrl.cart.shipping.address.state"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'city'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.address.city.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.address.city.instructions"
+                                 value="$ctrl.cart.shipping.address.city"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'postal_code'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.address.postal_code.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.address.postal_code.instructions"
+                                 value="$ctrl.cart.shipping.address.postal_code"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'line1'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.address.line1.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.address.line1.instructions"
+                                 value="$ctrl.cart.shipping.address.line1"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'line2'"
+                                 required="false"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.address.line2.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.address.line2.instructions"
+                                 value="$ctrl.cart.shipping.address.line2"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'name'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.name.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.name.instructions"
+                                 value="$ctrl.cart.shipping.name"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'email'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.email.label"
+                                 instructions="$ctrl.settings.modals.cart.email.instructions"
+                                 value="$ctrl.cart.email"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'phone'"
+                                 required="true"
+                                 trim="true"
+                                 label="$ctrl.settings.modals.cart.shipping.phone.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.phone.instructions"
+                                 value="$ctrl.cart.shipping.phone"
+                                 on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
+                </md-form>
+              </md-list>
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.shipping"
+                              on-click="$ctrl.nextStep()"></md-cart-button>
+            </md-cart-page>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.register = function(validator) {
+      ctrl.validator = validator;
+    };
+    
+    ctrl.nextStep = function() {
+      var isValid = ctrl.validator();
+      if (isValid) {
+        ctrl.onNextStep();
+      }
+    };
+    
+    ctrl.$onInit = function() {
+      
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      
+    };
+  }],
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
+    onUpdateShipping: '&',
+    onOpenCountries: '&',
+    onNextStep: '&'
+  }
+});
+
+mdApp.component('mdCartShippingMethods', {
+  template: `<md-cart-page page="3" current-page="$ctrl.step">
+              <md-list>
+                <md-list-subheader md-content="{{$ctrl.settings.modals.cart.shipping_methods.label}}"></md-list-subheader>
+                <md-form name="'cartShippingMethodsForm'" on-init="$ctrl.register(validator)">
+                  <md-radio-input ng-repeat="item in $ctrl.cart.shipping_methods"
+                                  name="shipping_methods"
+                                  value="$ctrl.cart.selected_shipping_method"
+                                  sample="item.id"
+                                  first="item.amount | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[item.currency.toUpperCase()]"
+                                  second="item.description"
+                                  on-select="$ctrl.onSelectShippingMethod({value: sample})"></md-radio-input>
+                </md-form>
+              </md-list>
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.methods"
+                              on-click="$ctrl.nextStep()"></md-cart-button>
+            </md-cart-page>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.register = function(validator) {
+      ctrl.validator = validator;
+    };
+    
+    ctrl.nextStep = function() {
+      var isValid = ctrl.validator();
+      if (isValid) {
+        ctrl.onNextStep();
+      }
+    };
+    
+    ctrl.$onInit = function() {
+      
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      
+    };
+  }],
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
+    onSelectShippingMethod: '&',
+    onNextStep: '&'
+  }
+});
+
+mdApp.component('mdCart', {
+  template: `<md-full-screen side="'right'" active="$ctrl.dialog" on-close="$ctrl.onExit()">
+              <md-app-bar>
+                <md-app-icon icon="'shopping_cart'"></md-app-icon>
+                <md-actions side="left" lines="4">
+                  <button md-button-icon-flat
+                          md-content="arrow_back"
+                          ng-click="$ctrl.closeCart()"></button>
+                </md-actions>
+                <md-actions side="right" lines="4" ng-if="$ctrl.cart.items.length">
+                  <button md-button-icon-flat
+                          md-content="delete"
+                          ng-click="$ctrl.deleteDialog = true"></button>
+                </md-actions>
+              </md-app-bar>
+              <md-cart-empty settings="$ctrl.settings"
+                             ng-if="!$ctrl.cart.items.length"></md-cart-empty>
+              <md-cart-products settings="$ctrl.settings"
+                                ng-if="$ctrl.cart.items.length"
+                                step="$ctrl.step"
+                                cart="$ctrl.cart"
+                                on-select="$ctrl.onOpenProduct({productId: productId, skuId: skuId})"
+                                on-next-step="$ctrl.progress()"></md-cart-products>
+              <md-cart-shipping settings="$ctrl.settings"
+                                ng-if="$ctrl.cart.items.length"
+                                step="$ctrl.step"
+                                cart="$ctrl.cart"
+                                on-update-shipping="$ctrl.onUpdateShipping({name: name, value: value})"
+                                on-open-countries="$ctrl.openCountries({value: value})"
+                                on-next-step="$ctrl.progress()"></md-cart-shipping>
+              <md-cart-shipping-methods settings="$ctrl.settings"
+                                        ng-if="$ctrl.cart.items.length"
+                                        step="$ctrl.step"
+                                        cart="$ctrl.cart"
+                                        on-select-shipping-method="$ctrl.onUpdateShippingMethods({value: value})"
+                                        on-next-step="$ctrl.progress()"></md-cart-shipping-methods>
+            </md-full-screen>
+            <md-cart-delete settings="$ctrl.settings"
+                            on-close="$ctrl.deleteCart(value)"
+                            ng-if="$ctrl.deleteDialog"></md-cart-delete>
+            <md-cart-countries settings="$ctrl.settings"
+                               sample="$ctrl.selectedCountry"
+                               ng-if="$ctrl.countriesDialog"
+                               on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
+  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+    var ctrl = this;
+    
+    ctrl.closeCart = function() {
+      ctrl.dialog = false;
+    };
+    
+    ctrl.deleteCart = function(value) {
+      ctrl.deleteDialog = false;
+      if (value) {
+        ctrl.onDeleteCart();
+      }
+    };
+    
+    ctrl.openCountries = function(value) {
+      ctrl.selectedCountry = value;
+      ctrl.countriesDialog = true;
+    };
+    
+    ctrl.selectCountry = function(value) {
+      if (value) {
+        ctrl.onUpdateShipping({'name': 'country', 'value': value});
+      }
+      ctrl.countriesDialog = false;
+    };
+    
+    ctrl.progress = function() {
+      if (ctrl.step === 2) {
+        ctrl.onCreateOrder();
+      }
+      ctrl.step = ctrl.step + 1;
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.dialog = true;
+      ctrl.step = 1;
+      ctrl.deleteDialog = false;
+      ctrl.countriesDialog = false;
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      
+    };
+  }],
+  bindings: {
+    settings: '<',
+    cart: '<',
+    onOpenProduct: '&',
+    onUpdateShipping: '&',
+    onCreateOrder: '&',
+    onUpdateShippingMethods: '&',
+    onDeleteCart: '&',
     onExit: '&'
   }
 });
 
-mdApp.component('mdProductQuantity', {
+mdApp.component('mdSkuQuantity', {
   template: `<md-list-cell>
                 <md-action md-pad="0,4">
                   <button md-button-icon-flat md-content="remove_shopping_cart" ng-click="$ctrl.remove()"
@@ -973,7 +1368,7 @@ mdApp.component('mdProductQuantity', {
   }
 });
 
-mdApp.component('mdProductVariantOptions', {
+mdApp.component('mdSkuAttributeOptions', {
   template: `<md-drawer-wide on-close="$ctrl.onSelect({attribute: $ctrl.attribute, option: $ctrl.option})" active="!$ctrl.option">
               <md-page vertical-scroll="scroll">
                 <md-list>
@@ -981,14 +1376,14 @@ mdApp.component('mdProductVariantOptions', {
                   <md-list-item-clickable ng-repeat="option in $ctrl.options"
                                           first="option.name"
                                           value="option.name"
-                                          sample="$ctrl.variant[$ctrl.attribute]"
+                                          sample="$ctrl.attributes[$ctrl.attribute]"
                                           disabled="option.disabled"
                                           on-click="$ctrl.selectOption(value)">
                   </md-list-item-clickable>
                 </md-list>
               </md-page>
             </md-drawer-wide>`,
-  controller: ['$scope', '$element', '$attrs', 'inventoryFormaterFilter', function($scope, $element, $attrs, inventoryFormaterFilter) {
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
     var getProductAttributes = function(product) {
@@ -1006,14 +1401,14 @@ mdApp.component('mdProductVariantOptions', {
       return angular.equals({}, result) ? false : result;
     };
     
-    var getOptions = function(product, variant, attribute) {
+    var getOptions = function(product, skuAttributes, attribute) {
       var skus = [];
       var options = [];
-      var variantCopy = angular.merge({}, variant);
-      delete variantCopy[attribute];
+      var skuAttributesCopy = angular.merge({}, skuAttributes);
+      delete skuAttributesCopy[attribute];
       angular.forEach(product.skus.data, function(sku) {
         var matched = true;
-        angular.forEach(variantCopy, function(value, key) {
+        angular.forEach(skuAttributesCopy, function(value, key) {
           if (sku.attributes[key] !== value) {
             matched = false;
           }
@@ -1023,7 +1418,7 @@ mdApp.component('mdProductVariantOptions', {
         }
       });
       angular.forEach(skus, function(sku) {
-        //var inventory = inventoryFormaterFilter(sku.inventory, false, false);
+        //var inventory = formatInventoryFilter(sku.inventory);
         var inventory = 1;
         var option = {
           'name': sku.attributes[attribute],
@@ -1040,29 +1435,29 @@ mdApp.component('mdProductVariantOptions', {
     
     ctrl.$onInit = function() {
       ctrl.option = false;
-      ctrl.options = getOptions(ctrl.product, ctrl.variant, ctrl.attribute);
+      ctrl.options = getOptions(ctrl.product, ctrl.attributes, ctrl.attribute);
     };
   }],
   bindings: {
     product: '<',
-    variant: '<',
+    attributes: '<',
     attribute: '<',
     onSelect: '&'
   }
 });
 
-mdApp.component('mdProductVariants', {
+mdApp.component('mdSkuAttributes', {
   template: `<md-list md-seam>
-              <md-list-item-clickable ng-repeat="(attribute, value) in $ctrl.variant"
-                                      first="attribute"
+              <md-list-item-clickable ng-repeat="(name, value) in $ctrl.attributes"
+                                      first="name"
                                       second="value"
-                                      value="attribute"
+                                      value="name"
                                       icon="'chevron_right'"
                                       icon-position="'right'"
                                       on-click="$ctrl.onSelect({value: value})"></md-list-item-clickable>
             </md-list>`,
   bindings: {
-    variant: '<',
+    attributes: '<',
     onSelect: '&',
   }
 });
@@ -1097,7 +1492,7 @@ mdApp.component('mdProductImageSlider', {
             <md-carousel index="{{$ctrl.images.length}}" position="{{$ctrl.position}}">
               <md-carousel-cell ng-repeat="item in $ctrl.images"
                                 md-width="{{mdCarouselWidth}}"
-                                md-height="{{mdCarouselHeight}}" >
+                                md-height="{{mdCarouselHeight}}">
                 <img md-img
                      ng-src="{{item}}"
                      md-width="{{mdCarouselWidth}}"
@@ -1107,11 +1502,27 @@ mdApp.component('mdProductImageSlider', {
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
+    var getImages = function(skuImage, productImages) {
+      var images = [];
+      if (skuImage) {
+        images.push(skuImage);
+      }
+      if (productImages.length) {
+        angular.forEach(productImages, function(image) {
+          if (image !== skuImage) {
+            images.push(image);
+          }
+        });
+      }
+      return images;
+    };
     ctrl.$onInit = function() {
+      ctrl.images = getImages(ctrl.skuImage, ctrl.productImages);
       ctrl.position = 0;
     };
     ctrl.$onChanges = function(changes) {
-      if (changes.images) {
+      if (changes.skuImage || changes.productImages) {
+        ctrl.images = getImages(ctrl.skuImage, ctrl.productImages);
         ctrl.position = 0;
       }
     };
@@ -1127,7 +1538,8 @@ mdApp.component('mdProductImageSlider', {
     };
   }],
   bindings: {
-    images: '<',
+    skuImage: '<',
+    productImages: '<'
   }
 });
 
@@ -1138,39 +1550,54 @@ mdApp.component('mdProduct', {
               </md-actions>
               <md-page vertical-scroll="scroll" ng-if="$ctrl.sku">
                 <md-form name="'productForm'">
-                  <md-product-image-slider images="$ctrl.sku.images" ng-if="$ctrl.sku.images.length"></md-product-image-slider>
-                  <md-product-info name="$ctrl.sku.name" description="$ctrl.sku.description" id="$ctrl.sku.id" price="$ctrl.sku.priceView" inventory="$ctrl.sku.inventoryView"></md-product-info>
-                  <md-product-variants variant="$ctrl.variant" ng-if="$ctrl.variant"
-                                       on-select="$ctrl.openOptions(value)"></md-product-variants>
+                  <md-product-image-slider sku-image="$ctrl.sku.image"
+                                           product-images="$ctrl.product.images"
+                                           ng-if="($ctrl.product.images.length || $ctrl.sku.image)"></md-product-image-slider>
+                  <md-product-info name="$ctrl.product.name"
+                                   description="$ctrl.product.description"
+                                   id="$ctrl.sku.id"
+                                   price="$ctrl.sku.price | formatCurrency:$ctrl.settings.currencies[$ctrl.sku.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.sku.currency.toUpperCase()]"
+                                   inventory="$ctrl.sku.inventory | formatAvailability:$ctrl.settings.modals.product.inventory"></md-product-info>
+                  <md-sku-attributes attributes="$ctrl.sku.attributes" ng-if="$ctrl.sku.attributes"
+                                       on-select="$ctrl.openOptions(value)"></md-sku-attributes>
                   <md-list>
-                    <md-product-quantity label="$ctrl.settings.modals.product.quantity.label"
-                                     instructions="$ctrl.settings.modals.product.quantity.instructions"
-                                     name="'quantity'"
+                    <md-sku-quantity name="'quantity'"
                                      min="0"
-                                     max="$ctrl.sku.availability"
+                                     max="$ctrl.sku.inventory | formatInventory"
                                      step="1"
                                      required="true"
-                                     value="$ctrl.sku.quantity"
-                                     on-change="$ctrl.updateQuantity(name, value)"></md-product-quantity>
+                                     value="$ctrl.quantity"
+                                     on-change="$ctrl.onUpdateQuantity({product: $ctrl.product, sku: $ctrl.sku, quantity: value})"></md-sku-quantity>
                   </md-list>
                 </md-form>
               </md-page>
             </md-full-screen-fade>
-            <md-product-variant-options ng-if="$ctrl.attribute"
-                                        product="$ctrl.product"
-                                        variant="$ctrl.variant"
-                                        attribute="$ctrl.attribute"
-                                        on-select="$ctrl.switchSku(attribute, option)"></md-product-variant-options>`,
-  controller: ['$scope', '$element', '$attrs', '$http', 'currencyFormaterFilter', 'inventoryFormaterFilter', 'imagesFormaterFilter',  function($scope, $element, $attrs, $http, currencyFormaterFilter, inventoryFormaterFilter, imagesFormaterFilter) {
+            <md-sku-attribute-options ng-if="$ctrl.attribute"
+                                      product="$ctrl.product"
+                                      attributes="$ctrl.sku.attributes"
+                                      attribute="$ctrl.attribute"
+                                      on-select="$ctrl.switchSku(attribute, option)"></md-sku-attribute-options>`,
+  controller: ['$scope', '$element', '$attrs', '$http',  function($scope, $element, $attrs, $http) {
     var ctrl = this;
     
-    var getSku = function(product, skuId) {
+    var getSku = function(product, skuId, skuAttributes) {
       var result = {};
       angular.forEach(product.skus.data, function(sku) {
         if (angular.equals({}, result)) {
           if (sku.active) {
-            if (!skuId || (skuId === sku.id)) {
-              result = sku;
+            if (!skuId && !skuAttributes) {
+              result = angular.merge({}, sku);
+            } else if (skuId) {
+              if (skuId === sku.id) {
+                result = angular.merge({}, sku);
+              }
+            } else if (skuAttributes) {
+              result = angular.merge({}, sku);
+              angular.forEach(skuAttributes, function(value, key) {
+                if (sku.attributes[key] !== value) {
+                  result = {};
+                }
+              });
             }
           }
         }
@@ -1178,56 +1605,14 @@ mdApp.component('mdProduct', {
       return angular.equals({}, result) ? false : result;
     };
     
-    var formatSku = function(sku, product, currencies, cart, settings) {
-      var result = angular.merge({}, sku);
-      result.name = product.name;
-      result.description = product.description;
-      result.priceView = currencyFormaterFilter(sku.price, currencies[sku.currency.toUpperCase()]);
-      result.inventoryView = inventoryFormaterFilter(sku.inventory, settings.modals.product.inventory, true);
-      result.availability = inventoryFormaterFilter(sku.inventory, false, false);
-      result.images = imagesFormaterFilter(sku.image, product.images);
-      result.quantity = 0;
-      angular.forEach(cart.items, function(item, key) {
-        if ((item.type === 'sku') && (item.parent === sku.id)) {
-          result.quantity = item.quantity;
-        }
-      });
-      return result;
-    };
-    
-    var buildCartItem = function(quantity, sku, currencies) {
-      var newSku = angular.merge({}, sku);
-      newSku.subtotal = currencyFormaterFilter((sku.price * quantity), currencies[sku.currency.toUpperCase()]);
-      var result = {
-        'type': 'sku',
-        'parent': sku.id,
-        'quantity': quantity,
-        'sku': newSku
-      };
-      return result;
-    };
-    
     ctrl.switchSku = function(attribute, option) {
       if (option) {
-        var variant = angular.merge({}, ctrl.variant);
-        variant[attribute] = option;
-        var result = {};
-        angular.forEach(ctrl.product.skus.data, function(sku) {
-          if (angular.equals({}, result)) {
-            if (sku.active) {
-              result = sku;
-              angular.forEach(variant, function(value, key) {
-                if (sku.attributes[key] !== value) {
-                  result = {};
-                }
-              });
-            }
-          }
-        });
-        if (!angular.equals({}, result)) {
-          ctrl.variant = variant;
-          ctrl.sku = formatSku(result, ctrl.product, ctrl.currencies, ctrl.cart, ctrl.settings);
-          ctrl.onSwitchSku({'sku': ctrl.sku});
+        var skuAttributes = angular.merge({}, ctrl.sku.attributes);
+        skuAttributes[attribute] = option;
+        var sku = getSku(ctrl.product, false, skuAttributes);
+        if (sku) {
+          ctrl.sku = sku;
+          ctrl.onSwitchSku({'product': ctrl.product, 'sku': ctrl.sku});
         }
       }
       ctrl.attribute = false;
@@ -1235,25 +1620,6 @@ mdApp.component('mdProduct', {
     
     ctrl.openOptions = function(attribute) {
       ctrl.attribute = attribute;
-    };
-    
-    ctrl.updateQuantity = function(name, quantity) {
-      if (typeof quantity === 'number') {
-        var updated = false;
-        angular.forEach(ctrl.cart.items, function(item, key) {
-          if ((item.type === 'sku') && (item.parent === ctrl.sku.id)) {
-            updated = true;
-            if (quantity > 0) {
-              ctrl.cart.items[key] = buildCartItem(quantity, ctrl.sku, ctrl.currencies);
-            } else {
-              ctrl.cart.items.splice(key, 1);
-            }
-          }
-        });
-        if (!updated && (quantity > 0)) {
-          ctrl.cart.items.push(buildCartItem(quantity, ctrl.sku, ctrl.currencies));
-        }
-      }
     };
     
     ctrl.closeProduct = function() {
@@ -1265,16 +1631,13 @@ mdApp.component('mdProduct', {
       //ctrl.sku = false;
       ctrl.attribute = false;
       if (ctrl.productId) {
-        $http.get('product/' + ctrl.productId.toString(), {'cache': true}).then(function(product) {
-          ctrl.product = product.data;
+        $http.get('product/' + ctrl.productId.toString(), {'cache': true}).then(function(response) {
+          ctrl.product = response.data;
           if (ctrl.product && ctrl.product.active) {
             var sku = getSku(ctrl.product, ctrl.skuId);
             if (sku) {
-              ctrl.variant = angular.merge({}, sku.attributes);
-              $http.get('app/currency.json', {'cache': true}).then(function(currencies) {
-                ctrl.currencies = currencies.data;
-                ctrl.sku = formatSku(sku, ctrl.product, ctrl.currencies, ctrl.cart, ctrl.settings);
-              });
+              ctrl.sku = sku;
+              ctrl.onSwitchSku({'product': ctrl.product, 'sku': ctrl.sku});
             }
           }
         });
@@ -1290,15 +1653,16 @@ mdApp.component('mdProduct', {
     settings: '<',
     productId: '<',
     skuId: '<',
-    cart: '<',
+    quantity: '<',
     onSwitchSku: '&',
+    onUpdateQuantity: '&',
     onExit: '&'
   }
 });
 
 mdApp.component('mdProducts', {
   template: `<md-wall min-item-width="240">
-              <md-wall-item-multiline-clickable ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({value: value})">
+              <md-wall-item-multiline-clickable ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({productId: value.id, skuId: false})">
                 <img md-base ng-if="product.images.length"
                      ng-src="{{product.images[0]}}"
                      width="100%">
@@ -1331,53 +1695,56 @@ mdApp.component('mdProducts', {
 mdApp.component('mdHome', {
   template: `<md-full-screen>
               <md-app-bar>
-                <md-app-logo img-width="$ctrl.settings.logo.width"
-                             img-height="$ctrl.settings.logo.height"
-                             img-src="$ctrl.settings.logo.src"
-                             img-alt="$ctrl.settings.site">
+                <md-app-logo img-width="'24px'"
+                             img-height="'24px'"
+                             img-src="$ctrl.settings.account.business_logo"
+                             img-alt="$ctrl.settings.account.business_name">
                 </md-app-logo>
                 <md-actions side="right" lines="4">
                   <button md-button-icon-flat md-content="shopping_cart" ng-click="$ctrl.openCart()"></button>
                 </md-actions>
               </md-app-bar>
               <md-page vertical-scroll="scroll" top="56px">
-                <md-products settings="$ctrl.settings" products="$ctrl.products" on-select="$ctrl.openProduct(value)"></md-products>
+                <md-products settings="$ctrl.settings" products="$ctrl.products" on-select="$ctrl.openProduct(productId, skuId)"></md-products>
               </md-page>
             </md-full-screen>
-            <md-product settings="$ctrl.settings" product-id="$ctrl.id" cart="$ctrl.cart" ng-if="$ctrl.id" on-exit="$ctrl.closeProduct()"></md-product>
-            <md-cart settings="$ctrl.settings" cart="$ctrl.cart" ng-if="$ctrl.cartDialog" on-exit="$ctrl.closeCart()"></md-cart>`,
-  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+            <md-cart settings="$ctrl.settings"
+                     cart="$ctrl.cart"
+                     ng-if="$ctrl.cartDialog"
+                     on-open-product="$ctrl.openProduct(productId, skuId)"
+                     on-update-shipping="$ctrl.updateShipping(name, value)"
+                     on-create-order="$ctrl.createOrder()"
+                     on-update-shipping-methods="$ctrl.updateShippingMethods(value)"
+                     on-delete-cart="$ctrl.deleteCart()"
+                     on-exit="$ctrl.closeCart()"></md-cart>
+            <md-product settings="$ctrl.settings"
+                        product-id="$ctrl.productId"
+                        sku-id="$ctrl.skuId"
+                        quantity="$ctrl.skuQuantity"
+                        ng-if="$ctrl.productId"
+                        on-switch-sku="$ctrl.switchProductSku(product, sku)"
+                        on-update-quantity="$ctrl.updateProductSkuQuantity(product, sku, quantity)"
+                        on-exit="$ctrl.closeProduct()"></md-product>`,
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', function($scope, $element, $attrs, $http, mdCartFactory) {
     var ctrl = this;
     
-    var resetCart = function() {
-      var cart = {
-        'currency': '',
-        'coupon': '',
-        'email': '',
-        'items': [],
-        'metadata': {},
-        'shipping': {
-          'name': '',
-          'phone': '',
-          'address': {
-            'country': '',
-            'state': '',
-            'city': '',
-            'postal_code': '',
-            'line1': '',
-            'line2': ''
-          }
-        }
-      };
-      return cart;
+    ctrl.openProduct = function(productId, skuId) {
+      ctrl.productId = productId;
+      ctrl.skuId = skuId;
     };
     
-    ctrl.openProduct = function(value) {
-      ctrl.id = value.id;
+    ctrl.closeProduct = function() {
+      ctrl.productId = false;
+      ctrl.skuId = false;
     };
     
-    ctrl.closeProduct = function(value) {
-      ctrl.id = false;
+    ctrl.switchProductSku = function(product, sku) {
+      ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.cart, sku.id);
+    };
+    
+    ctrl.updateProductSkuQuantity = function(product, sku, quantity) {
+      mdCartFactory.updateCartItem(ctrl.cart, product, sku, quantity);
+      ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.cart, sku.id);
     };
     
     ctrl.openCart = function() {
@@ -1388,13 +1755,41 @@ mdApp.component('mdHome', {
       ctrl.cartDialog = false;
     };
     
+    ctrl.updateShipping = function(name, value) {
+      mdCartFactory.updateCartShipping(ctrl.cart, name, value);
+    };
+    
+    ctrl.createOrder = function() {
+      ctrl.cart = mdCartFactory.createOrder(ctrl.cart);
+    };
+    
+    ctrl.updateShippingMethods = function(value) {
+      mdCartFactory.updateCartShippingMethods(ctrl.cart, value);
+    };
+    
+    ctrl.deleteCart = function() {
+      ctrl.cart = mdCartFactory.setupCart();
+      ctrl.cart.currency = ctrl.settings.account.default_currency;
+    };
+    
     ctrl.$onInit = function() {
-      $http.get('app/settings.json', {'cache': true}).then(function(res) {
-        ctrl.settings = res.data;
-        ctrl.id = false;
+      $http.get('app/settings.json', {'cache': true}).then(function(response) {
+        ctrl.settings = response.data;
+        $http.get('app/currency.json', {'cache': true}).then(function(response) {
+          ctrl.settings.currencies = response.data;
+        });
+        $http.get('app/countries.json', {'cache': true}).then(function(response) {
+          ctrl.settings.countries = response.data.list;
+        });
+        $http.get('account', {'cache': true}).then(function(response) {
+          ctrl.settings.account = response.data;
+          ctrl.cart = mdCartFactory.setupCart();
+          ctrl.cart.currency = ctrl.settings.account.default_currency;
+        });
+        ctrl.productId = false;
         ctrl.cartDialog = false;
-        ctrl.cart = resetCart();
       });
+      
     };
     
     ctrl.$onChanges = function(changes) {
@@ -1402,123 +1797,13 @@ mdApp.component('mdHome', {
     };
   }],
   bindings: {
-    settings: '<',
-    products: '<',
   }
 });
 
-mdApp.controller('AppController', ['$scope', '$http', 'currencyFormaterFilter', function($scope, $http, currencyFormaterFilter) {
+mdApp.controller('AppController', ['$scope', '$http', function($scope, $http) {
   
-  $http.get('app/countries.json', {'cache': true}).then(function(res) {
-    $scope.countries = res.data.list;
+  $http.get('account', {'cache': true}).then(function(response) {
+    $scope.account = response.data;
   });
   
-  
-  $scope.pattern = RegExp(/^\s*\w*\s*$/);
-  
-  $scope.cart = {};
-  $scope.order = {
-    'currency': '',
-    'coupon': '',
-    'email': '',
-    'items': [],
-    'metadata': {},
-    'shipping': {
-      'name': '',
-      'phone': '',
-      'address': {
-        'country': '',
-        'state': '',
-        'city': '',
-        'postal_code': '',
-        'line1': '',
-        'line2': ''
-      }
-    }
-  };
-  $scope.cart.progress = function(value) {
-    if (value === 'address') {
-      $scope.cart.products.top = '-100%';
-      $scope.cart.products.bottom = '100%';
-      $scope.cart.address.top = '56px';
-      $scope.cart.address.bottom = '0';
-    }
-    
-  };
-  $scope.cart.update_shipping = function(name, value) {
-    if (name === 'country') {
-      $scope.order.shipping.address.country = value;
-      $scope.countryDialog.active = false;
-    }
-    if (name === 'state') {
-      $scope.order.shipping.address.state = value;
-    }
-    if (name === 'city') {
-      $scope.order.shipping.address.city = value;
-    }
-    if (name === 'postal_code') {
-      $scope.order.shipping.address.postal_code = value;
-    }
-    if (name === 'line1') {
-      $scope.order.shipping.address.line1 = value;
-    }
-    if (name === 'line2') {
-      $scope.order.shipping.address.line2 = value;
-    }
-    if (name === 'name') {
-      $scope.order.shipping.name = value;
-    }
-    if (name === 'phone') {
-      $scope.order.shipping.phone = value;
-    }
-    if (name === 'email') {
-      $scope.order.email = value;
-    }
-  };
-  $scope.cart.register = function(validator) {
-    $scope.cart.validator = validator;
-  };
-  $scope.cart.submit = function(form) {
-    var isCartValid = $scope.cart.validator();
-    if (isCartValid) {
-      $scope.order_results = $scope.order;
-    }
-    if ($scope.submitLine === "Submit") {
-      $scope.submitLine = "Bla";
-    } else {
-      $scope.submitLine = "Submit";
-    }
-    
-    /*$http.post('https://mystical-banner-139818.appspot.com/pay', {'order': $scope.order}, {'cache': true}).then(function(res) {
-      $scope.results = res.data;
-    });*/
-  };
-  $scope.cartDialog = {'show': false, 'active': false};
-  
-  $scope.submitLine = "Submit";
-  
-  $scope.radio = "";
-  
-  $scope.num = "";
-  
-  $scope.update_radio = function(value) {
-    $scope.radio = value;
-  };
-  
-  $scope.simpleDialog = {'show': false, 'active': false};
-  $scope.drawerWideDialog = {'show': false, 'active': false};
-  $scope.openDialog = function(dialog, title, options, callback) {
-    $scope.options_title = title;
-    $scope.options = options;
-    $scope.option_callback = callback;
-    $scope[dialog].show = true;
-    $scope[dialog].active = true;
-  };
-  $scope.closeDialog = function(dialog) {
-    $scope[dialog].show = false;
-    $scope[dialog].active = false;
-    $scope.options_title = '';
-    $scope.options = '';
-    $scope.option_callback = '';
-  };
 }]);

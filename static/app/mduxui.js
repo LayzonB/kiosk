@@ -209,6 +209,16 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
         'letter-spacing': '0.1px',
         'color': 'rgba(0, 0, 0, 0.87)',
       },
+      'button': {
+        'font-size': '14px',
+        'font-weight': '500',
+        'line-height': '24px',
+        'letter-spacing': '0.1px',
+        'color': 'rgba(0, 0, 0, 0.87)',
+        'text-align': 'center',
+        'text-transform': 'uppercase',
+        'white-space': 'nowrap',
+      },
       'subheader': {
         'font-size': '14px',
         'font-weight': '500',
@@ -766,6 +776,26 @@ mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
   };
 }]);
 
+mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var s = {
+        'min-width': '64px',
+        'height': '36px',
+        'padding': '6px 8px',
+        'margin': '6px 4px',
+        'border-radius': '2px',
+        'overflow': 'hidden',
+        'background': 'rgba(255, 255, 255, 1)',
+        'color': 'rgba(0, 0, 0, 0.87)',
+        'cursor': 'pointer',
+      };
+      element.css(mdStyle.font('button', mdStyle.general(s)));
+      mdStyle.ripple(scope, element, attrs, 'tracking-dark');
+    }
+  };
+}]);
+
 mdUXUI.directive('mdButtonComposite', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
@@ -913,6 +943,17 @@ mdUXUI.directive('mdSimpleCase', ['mdStyle', function(mdStyle) {
   };
 }]);
 
+mdUXUI.directive('mdConfirmationCase', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var s = {
+        'padding': '24px 40px',
+      };
+      element.css(mdStyle.modal('case', s));
+    }
+  };
+}]);
+
 mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
@@ -976,10 +1017,10 @@ mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
       var toggle = function(active) {
         var s = {};
         if (active) {
-          s['transition'] = 'opacity 0.3s linear 0s';
+          s['transition'] = 'opacity 0.3s linear 0s, width 0.3s linear 0s, height 0.3s linear 0s';
           s['opacity'] = '1';
         } else {
-          s['transition'] = 'opacity 0.3s linear 0s';
+          s['transition'] = 'opacity 0.3s linear 0s, width 0.3s linear 0s, height 0.3s linear 0s';
           s['opacity'] = '0';
         }
         element.css(s);
@@ -1048,6 +1089,22 @@ mdUXUI.directive('mdSimpleSheet', ['mdStyle', function(mdStyle) {
         'min-width': '168px',
         'max-width': '560px',
         'height': '100%',
+        'box-shadow': '0 12px 24px 6px rgba(0, 0, 0, 0.26)',
+      };
+      element.css(mdStyle.modal('sheet', s));
+    }
+  };
+}]);
+
+mdUXUI.directive('mdConfirmationSheet', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var s = {
+        'position': 'relative',
+        'border-radius': '2px',
+        'width': '100%',
+        'min-width': '168px',
+        'max-width': '560px',
         'box-shadow': '0 12px 24px 6px rgba(0, 0, 0, 0.26)',
       };
       element.css(mdStyle.modal('sheet', s));
