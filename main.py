@@ -14,7 +14,7 @@ class ListProducts(webapp2.RequestHandler):
     try:
       params = {
         "active": "true",
-        "limit": self.request.get('limit', 10),
+        "limit": 10,
         "start": self.request.get('start', None)
       }
       data = stripe.Product.list(**params)
@@ -31,6 +31,17 @@ class ViewProduct(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = stripe.Product.retrieve(product)
+      if (data['skus']['has_more']):
+        all_skus = []
+        skus = stripe.SKU.list(active=True, limit=100, product=data['id'])
+        all_skus.extend(skus['data'])
+        has_more = skus['has_more']
+        while has_more:
+          skus = stripe.SKU.list(active=True, limit=100, product=data['id'], starting_after=all_skus[-1]['id'])
+          all_skus.extend(skus['data'])
+          has_more = skus['has_more']
+          #has_more = (len(skus['data']) > 0)
+        data['skus']['data'] = all_skus
       self.response.write(data)
       # for some reason json.dumps is not working here
       #self.response.write(json.dumps(data))
@@ -91,6 +102,37 @@ class ViewOrder(webapp2.RequestHandler):
       self.response.write(data)
       # for some reason json.dumps is not working here
       #self.response.write(json.dumps(data))
+    except:
+      self.response.write('')
+
+
+class CreateSKUs(webapp2.RequestHandler):
+
+  def get(self):
+    self.response.headers['Content-Type'] = 'application/json'
+    try:
+      data = []
+      sku = {}
+      sku['product'] = 'prod_80HnnViSIO0LWc'
+      sku['price'] = 100
+      sku['currency'] = 'usd'
+      sku['inventory'] = {'type': 'finite', 'quantity': '1'}
+      sizes = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL']
+      colors = ['Black', 'Beige', 'Pink', 'Orange', 'Silver', 'Purple', 'Gray', 'Burgundy']
+      fabrics = ['Silk', 'Cotton', 'Polyester']
+      attributes = {}
+      for size in sizes:
+        attributes['size'] = size
+        for color in colors:
+          attributes['color'] = color
+          for fabric in fabrics:
+            attributes['fabric'] = fabric
+            sku['attributes'] = attributes
+            data.append(stripe.SKU.create(**sku))
+      
+      #self.response.write(data)
+      # for some reason json.dumps is not working here
+      self.response.write(json.dumps(data))
     except:
       self.response.write('')
 

@@ -696,6 +696,7 @@ mdUXUI.directive('mdInputNumber', ['mdStyle', function(mdStyle) {
         'min-height': '36px',
         'appearance': 'none',
         'transition': 'border 0.2s linear 0s, color 0.2s linear 0s',
+        'width': '100%',
       };
       //'width': '96px',
       element.css(mdStyle.font('display1', mdStyle.misc('textCenter', mdStyle.general(s))));
@@ -1157,7 +1158,7 @@ mdUXUI.directive('mdAppBar', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdActions', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var actions = {
+      var s = {
         'position': 'absolute',
         'overflow': 'hidden',
         'z-index': '200',
@@ -1165,22 +1166,22 @@ mdUXUI.directive('mdActions', ['mdStyle', function(mdStyle) {
         'flex-direction': 'row',
       };
       var lines, side, dialog;
-      element.css(mdStyle.collections(actions));
+      element.css(mdStyle.collections(s));
       var setPosition = function(lines, side, dialog) {
-        var position = {};
+        var s = {};
         if (lines > '3') {
-          position['top'] = '4px';
+          s['top'] = '4px';
         } else if (lines === '2') {
-          position['top'] = '12px';
+          s['top'] = '12px';
         } else {
-          position['top'] = '0';
+          s['top'] = '0';
         }
         if (side === 'left') {
-          position['left'] = dialog ? '12px' : '4px';
+          s['left'] = dialog ? '12px' : '4px';
         } else if (side === 'right') {
-          position['right'] = dialog ? '12px' : '4px';
+          s['right'] = dialog ? '12px' : '4px';
         }
-        element.css(position);
+        element.css(s);
       };
       setPosition(lines, side, dialog);
       attrs.$observe('lines', function(value) {
@@ -1206,11 +1207,11 @@ mdUXUI.directive('mdActions', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdAction', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var icon = {
+      var s = {
         'flex-direction': 'row',
         'justify-content': 'space-between',
       };
-      element.css(mdStyle.collections(icon));
+      element.css(mdStyle.collections(s));
       attrs.$observe('side', function(value) {
         if (value === 'center') {
           element.css({'justify-content': 'center'});
@@ -1378,7 +1379,7 @@ mdUXUI.directive('mdFade', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdCards', ['$window', 'mdStyle', function($window, mdStyle) {
+mdUXUI.directive('mdCards', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var s = {
@@ -1565,6 +1566,33 @@ mdUXUI.directive('mdCarouselCell', ['mdStyle', function(mdStyle) {
         if (value) {
           height = value;
           setSize();
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdCarouselAction', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var s = {
+        'position': 'absolute',
+        'overflow': 'hidden',
+        'z-index': '200',
+        'justify-content': 'center',
+        'flex-direction': 'row',
+        'align-items': 'center',
+        'top': '4px',
+        'bottom': '4px',
+      };
+      element.css(mdStyle.collections(s));
+      attrs.$observe('side', function(value) {
+        if (value === 'center') {
+          element.css({'left': '4px', 'right': '4px'});
+        } else if (value === 'left') {
+          element.css({'left': '4px'});
+        } else if (value === 'right') {
+          element.css({'right': '4px'});
         }
       });
     }
@@ -1765,6 +1793,68 @@ mdUXUI.directive('mdPad', ['mdStyle', function(mdStyle) {
         if (value) {
           element.css(mdStyle.pad(value));
         }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdSetWidth', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      attrs.$observe('mdSetWidth', function(value) {
+        if (value) {
+          element.css({'width': value.toString() + 'px'});
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdSetHeight', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      attrs.$observe('mdSetHeight', function(value) {
+        if (value) {
+          element.css({'height': value.toString() + 'px'});
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdGetWidth', ['$window', 'mdStyle', function($window, mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var mdGetWidth = 0;
+      scope.mdGetWidth = parseInt((element.width() + mdGetWidth));
+      attrs.$observe('mdGetWidth', function(value) {
+        if (value) {
+          mdGetWidth = parseInt(value);
+          scope.mdGetWidth = parseInt((element.width() + mdGetWidth));
+        }
+      });
+      angular.element($window).on('resize', function() {
+        scope.mdGetWidth = parseInt((element.width() + mdGetWidth));
+        scope.$apply();
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdGetHeight', ['$window', 'mdStyle', function($window, mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var mdGetHeight = 0;
+      scope.mdGetHeight = parseInt((element.height() + mdGetHeight));
+      attrs.$observe('mdGetHeight', function(value) {
+        if (value) {
+          mdGetHeight = parseInt(value);
+          scope.mdGetHeight = parseInt((element.height() + mdGetHeight));
+        }
+      });
+      angular.element($window).on('resize', function() {
+        scope.mdGetHeight = parseInt((element.height() + mdGetHeight));
+        scope.$apply();
       });
     }
   };

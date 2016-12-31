@@ -2,7 +2,7 @@
 
 var dataLayer = [];
 
-var mdApp = angular.module('mdApp', ['mdUXUI']);
+var mdApp = angular.module('mdApp', ['mdUXUI', 'ngTouch']);
 
 mdApp.config([function() {
   
@@ -1026,12 +1026,6 @@ mdApp.component('mdCartShipping', {
               <md-list>
                 <md-list-subheader md-content="{{$ctrl.settings.modals.cart.shipping.label}}"></md-list-subheader>
                 <md-form name="'cartShippingForm'" on-init="$ctrl.register(validator)">
-                  <md-list-item-clickable first="$ctrl.settings.modals.cart.shipping.address.country.label"
-                                          second="$ctrl.cart.shipping.address.country | formatCountry:$ctrl.settings.countries"
-                                          value="$ctrl.cart.shipping.address.country"
-                                          icon="'chevron_right'"
-                                          icon-position="'right'"
-                                          on-click="$ctrl.onOpenCountries({value: value})"></md-list-item-clickable>
                   <md-selection-input name="'country'"
                                       required="true"
                                       trim="true"
@@ -1283,13 +1277,11 @@ mdApp.component('mdCart', {
 
 mdApp.component('mdSkuQuantity', {
   template: `<md-list-cell>
-                <md-action md-pad="0,4">
-                  <button md-button-icon-flat md-content="remove_shopping_cart" ng-click="$ctrl.remove()"
-                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
                   <input name="{{$ctrl.name}}"
                          type="text"
                          readonly
                          md-input-number
+                         md-pad="4,56"
                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"
                          ng-model="$ctrl.value"
                          ng-model-options="{allowInvalid: false}"
@@ -1300,9 +1292,14 @@ mdApp.component('mdSkuQuantity', {
                          ng-max="$ctrl.max"
                          ng-step="$ctrl.step"
                          ng-change="$ctrl.qchange()">
+                <md-actions side="left">
+                  <button md-button-icon-flat md-content="remove_shopping_cart" ng-click="$ctrl.remove()"
+                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
+                </md-actions>
+                <md-actions side="right">
                   <button md-button-icon-flat md-content="add_shopping_cart" ng-click="$ctrl.add()"
                           md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
-                </md-action>
+                </md-actions>
             </md-list-cell>`,
   require: {'form': '^^mdForm'},
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
@@ -1483,22 +1480,28 @@ mdApp.component('mdProductInfo', {
 });
 
 mdApp.component('mdProductImageSlider', {
-  template: `<md-actions side="left" lines="4">
-              <button md-button-icon-flat md-content="chevron_left" ng-click="$ctrl.rewind()"></button>
-            </md-actions>
-            <md-actions side="right" lines="4">
-              <button md-button-icon-flat md-content="chevron_right" ng-click="$ctrl.forward()"></button>
-            </md-actions>
-            <md-carousel index="{{$ctrl.images.length}}" position="{{$ctrl.position}}">
-              <md-carousel-cell ng-repeat="item in $ctrl.images"
-                                md-width="{{mdCarouselWidth}}"
-                                md-height="{{mdCarouselHeight}}">
-                <img md-img
-                     ng-src="{{item}}"
-                     md-width="{{mdCarouselWidth}}"
-                     md-height="{{mdCarouselHeight}}">
-              </md-carousel-cell>
-            </md-carousel>`,
+  template: `<md-base md-get-height="-124" md-set-height="{{mdGetHeight}}" md-get-width>
+              <md-carousel-action side="left" lines="4">
+                <button md-button-composite theme="tracking-dark" ng-click="$ctrl.rewind()">
+                  <md-base md-icon="avatar" md-pad="12" md-content="chevron_left"></md-bsae>
+                </button>
+              </md-carousel-action>
+              <md-carousel-action side="right" lines="4">
+                <button md-button-composite theme="tracking-dark" ng-click="$ctrl.forward()">
+                  <md-base md-icon="avatar" md-pad="12" md-content="chevron_right"></md-bsae>
+                </button>
+              </md-carousel-action>
+              <md-carousel index="{{$ctrl.images.length}}" position="{{$ctrl.position}}" ng-swipe-left="$ctrl.forward()" ng-swipe-right="$ctrl.rewind()">
+                <md-carousel-cell ng-repeat="item in $ctrl.images"
+                                  md-width="{{mdCarouselWidth}}"
+                                  md-height="{{mdGetHeight}}">
+                  <img md-img
+                       ng-src="{{item}}"
+                       md-width="{{mdCarouselWidth}}"
+                       md-height="{{mdGetHeight}}">
+                </md-carousel-cell>
+              </md-carousel>
+            </md-base>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
