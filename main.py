@@ -19,8 +19,6 @@ class ListProducts(webapp2.RequestHandler):
       }
       data = stripe.Product.list(**params)
       self.response.write(data)
-      # for some reason json.dumps is not working here
-      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -43,8 +41,6 @@ class ViewProduct(webapp2.RequestHandler):
           #has_more = (len(skus['data']) > 0)
         data['skus']['data'] = all_skus
       self.response.write(data)
-      # for some reason json.dumps is not working here
-      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -55,9 +51,17 @@ class ViewAccount(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = stripe.Account.retrieve()
-      self.response.write(data)
-      # for some reason json.dumps is not working here
-      #self.response.write(json.dumps(data))
+      result = {
+        'business_logo': data['business_logo'],
+        'business_name': data['business_name'],
+        'business_primary_color': data['business_primary_color'],
+        'business_url': data['business_url'],
+        'default_currency': data['default_currency'],
+        'support_email': data['support_email'],
+        'support_phone': data['support_phone'],
+        'support_url': data['support_url']
+      }
+      self.response.write(json.dumps(result))
     except:
       self.response.write('')
 
@@ -71,8 +75,6 @@ class CreateOrder(webapp2.RequestHandler):
       # params filtering/cleanup/validation required
       data = stripe.Order.create(**params)
       self.response.write(data)
-      # for some reason json.dumps is not working here
-      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -87,8 +89,6 @@ class PayOrder(webapp2.RequestHandler):
       order = stripe.Order.retrieve(params.pop("order"))
       data = order.pay(**params)
       self.response.write(data)
-      # for some reason json.dumps is not working here
-      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -100,8 +100,6 @@ class ViewOrder(webapp2.RequestHandler):
     try:
       data = stripe.Order.retrieve(order)
       self.response.write(data)
-      # for some reason json.dumps is not working here
-      #self.response.write(json.dumps(data))
     except:
       self.response.write('')
 
@@ -129,10 +127,7 @@ class CreateSKUs(webapp2.RequestHandler):
             attributes['fabric'] = fabric
             sku['attributes'] = attributes
             data.append(stripe.SKU.create(**sku))
-      
-      #self.response.write(data)
-      # for some reason json.dumps is not working here
-      self.response.write(json.dumps(data))
+      self.response.write(data)
     except:
       self.response.write('')
 
