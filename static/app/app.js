@@ -1,3 +1,6 @@
+(function() {
+  'use strict';
+
 /*--------------------------------------------------App--------------------------------------------------*/
 
 var dataLayer = [];
@@ -451,15 +454,18 @@ mdApp.component('mdCardsItemMultilineClickable', {
 });
 
 mdApp.component('mdWallItemMultiline', {
-  template: `<md-wall-cell>
+  template: `<md-wall-cell md-width="{{$ctrl.mdWidth}}">
               <md-wall-cell-tile ng-transclude>
               </md-wall-cell-tile>
             </md-wall-cell>`,
-  transclude: true
+  transclude: true,
+  bindings: {
+    mdWidth: '<'
+  }
 });
 
 mdApp.component('mdWallItemMultilineClickable', {
-  template: `<md-wall-item-multiline>
+  template: `<md-wall-item-multiline md-width="$ctrl.mdWidth">
               <button md-button-composite
                       ng-click="$ctrl.onClick({value: $ctrl.value})"
                       theme="tracking-dark"
@@ -469,7 +475,8 @@ mdApp.component('mdWallItemMultilineClickable', {
   transclude: true,
   bindings: {
     onClick: '&',
-    value: '<'
+    value: '<',
+    mdWidth: '<'
   }
 });
 
@@ -1665,7 +1672,7 @@ mdApp.component('mdProduct', {
 
 mdApp.component('mdProducts', {
   template: `<md-wall min-item-width="240">
-              <md-wall-item-multiline-clickable ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({productId: value.id, skuId: false})">
+              <md-wall-item-multiline-clickable md-width="mdWall.itemWidth" ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({productId: value.id, skuId: false})">
                 <img md-base ng-if="product.images.length"
                      ng-src="{{product.images[0]}}"
                      width="100%">
@@ -1674,15 +1681,36 @@ mdApp.component('mdProducts', {
                   <md-base md-font="body1" md-misc="textTrim" md-content="{{product.description}}" ng-if="product.description"></md-base>
                 </md-base>
               </md-wall-item-multiline-clickable>
+              <div md-clear></div>
+              <md-cards-item-multiline-clickable ng-if="$ctrl.products.has_more" on-click="$ctrl.loadMoreProducts()">
+                <md-base md-pad="24,16"
+                         md-icon="avatar"
+                         md-content="refresh"></md-base>
+              </md-cards-item-multiline-clickable>
             </md-wall>`,
   controller: ['$scope', '$element', '$attrs', '$http',  function($scope, $element, $attrs, $http) {
     var ctrl = this;
     
-    ctrl.$onInit = function() {
-      // here we use path to list all products
-      $http.get('products', {'cache': true}).then(function(response) {
-        ctrl.products = response.data;
+    var getProducts = function(products) {
+      var query = '';
+      if (products.has_more) {
+        query = '?start=' + products.data[products.data.length - 1]['id'];
+      }
+      $http.get('products' + query, {'cache': true}).then(function(response) {
+        products.data.push.apply(products.data, response.data.data);
+        products.has_more = response.data.has_more;
       });
+    };
+    
+    ctrl.loadMoreProducts = function() {
+      if (ctrl.products.has_more) {
+        getProducts(ctrl.products);
+      }
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.products = {'data': [], 'has_more': false};
+      getProducts(ctrl.products);
     };
     
     ctrl.$onChanges = function(changes) {
@@ -1708,7 +1736,9 @@ mdApp.component('mdHome', {
                 </md-actions>
               </md-app-bar>
               <md-page vertical-scroll="scroll" top="56px">
-                <md-products settings="$ctrl.settings" products="$ctrl.products" on-select="$ctrl.openProduct(productId, skuId)"></md-products>
+                <md-products settings="$ctrl.settings"
+                             products="$ctrl.products"
+                             on-select="$ctrl.openProduct(productId, skuId)"></md-products>
               </md-page>
             </md-full-screen>
             <md-cart settings="$ctrl.settings"
@@ -1792,7 +1822,6 @@ mdApp.component('mdHome', {
         ctrl.productId = false;
         ctrl.cartDialog = false;
       });
-      
     };
     
     ctrl.$onChanges = function(changes) {
@@ -1810,3 +1839,5 @@ mdApp.controller('AppController', ['$scope', '$http', function($scope, $http) {
   });
   
 }]);
+
+})();

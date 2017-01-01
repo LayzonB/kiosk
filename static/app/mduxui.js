@@ -1,3 +1,6 @@
+(function() {
+  'use strict';
+
 /*--------------------------------------------------UXUI Module--------------------------------------------------*/
 
 var mdUXUI = angular.module('mdUXUI', []);
@@ -511,7 +514,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
   var calculateContainer = function (containerWidth, minItemWidth) {
     var itemCount = 1;
     while (true) {
-      itemWidth = containerWidth / itemCount;
+      var itemWidth = containerWidth / itemCount;
       if (itemWidth < minItemWidth) {
         if (itemCount > 1) {
           itemCount = itemCount - 1;
@@ -1234,19 +1237,24 @@ mdUXUI.directive('mdGrid', ['$window', 'mdStyle', function($window, mdStyle) {
         'flex-wrap': 'wrap',
       };
       element.css(mdStyle.collections(s));
-      var minItemWidth = attrs.minItemWidth;
-      var width = (element.width() - 2);
+      var minItemWidth = parseInt(attrs.minItemWidth);
+      var calculateContainer = function() {
+        var width = (parseInt(element.width()) - 2);
+        scope.mdGrid = mdStyle.calculateContainer(width, minItemWidth);
+      };
       attrs.$observe('minItemWidth', function(value) {
         if (value) {
-          minItemWidth = value;
-          width = (element.width() - 2);
-          scope.mdGrid = mdStyle.calculateContainer(width, minItemWidth);
+          minItemWidth = parseInt(value);
+          calculateContainer();
         }
       });
-      scope.mdGrid = mdStyle.calculateContainer(width, minItemWidth);
+      calculateContainer();
       angular.element($window).on('resize', function() {
-        width = (element.width() - 2);
-        scope.mdGrid = mdStyle.calculateContainer(width, minItemWidth);
+        calculateContainer();
+        scope.$apply();
+      });
+      angular.element($window).on('load', function() {
+        calculateContainer();
         scope.$apply();
       });
     }
@@ -1417,33 +1425,37 @@ mdUXUI.directive('mdCardsCellTile', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdWall', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      /*var s = {
         'padding': '4px',
         'column-rule': '0 none rgba(0, 0, 0, 0)',
         'column-gap': '0',
         'column-count': '1',
         'column-span': '1',
         'column-width': 'auto',
+      };*/
+      var s = {
+        'padding': '4px',
       };
       element.css(mdStyle.general(s));
-      var minItemWidth = attrs.minItemWidth;
-      var width = (element.width() - 8);
+      var minItemWidth = parseInt(attrs.minItemWidth);
       var calculateContainer = function() {
-        var wall = mdStyle.calculateContainer(width, minItemWidth);
-        element.css({'column-count': wall.itemCount});
-        return wall;
+        var width = parseInt(element.width());
+        scope.mdWall = mdStyle.calculateContainer(width, minItemWidth);
+        //element.css({'column-count': wall.itemCount});
       };
       attrs.$observe('minItemWidth', function(value) {
         if (value) {
-          minItemWidth = value;
-          width = (element.width() - 8);
-          scope.mdWall = calculateContainer();
+          minItemWidth = parseInt(value);
+          calculateContainer();
         }
       });
-      scope.mdWall = calculateContainer();
+      calculateContainer();
       angular.element($window).on('resize', function() {
-        width = (element.width() - 8);
-        scope.mdWall = calculateContainer();
+        calculateContainer();
+        scope.$apply();
+      });
+      angular.element($window).on('load', function() {
+        calculateContainer();
         scope.$apply();
       });
     }
@@ -1453,9 +1465,13 @@ mdUXUI.directive('mdWall', ['$window', 'mdStyle', function($window, mdStyle) {
 mdUXUI.directive('mdWallCell', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      /*var s = {
         'padding': '4px',
         'break-inside': 'avoid',
+      };*/
+      var s = {
+        'padding': '4px',
+        'float': 'left',
       };
       element.css(mdStyle.general(s));
       var width;
@@ -1478,12 +1494,12 @@ mdUXUI.directive('mdWallCell', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var tile = {
+      var s = {
         'border-radius': '2px',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
         'transition': 'box-shadow 0.2s linear 0s',
       };
-      element.css(mdStyle.general(tile));
+      element.css(mdStyle.general(s));
     }
   };
 }]);
@@ -1499,8 +1515,11 @@ mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle)
         'width': '100%',
       };
       element.css(mdStyle.collections(s));
-      scope.mdCarouselHeight = parseInt(element.height());
-      scope.mdCarouselWidth = parseInt(element.width());
+      var setCarouselSize = function() {
+        scope.mdCarouselHeight = parseInt(element.height());
+        scope.mdCarouselWidth = parseInt(element.width());
+      };
+      setCarouselSize();
       var position = 0;
       var index = 0;
       var setPosition = function() {
@@ -1513,8 +1532,12 @@ mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle)
         element.css({'right': right.toString() + 'px'});
       };
       angular.element($window).on('resize', function() {
-        scope.mdCarouselHeight = parseInt(element.height());
-        scope.mdCarouselWidth = parseInt(element.width());
+        setCarouselSize();
+        scope.$apply();
+        setPosition();
+      });
+      angular.element($window).on('load', function() {
+        setCarouselSize();
         scope.$apply();
         setPosition();
       });
@@ -1602,8 +1625,6 @@ mdUXUI.directive('mdCarouselAction', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdImg', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      //var width = parseInt(element.width());
-      //var height = parseInt(element.height());
       var width, height, originalWidth, originalHeight;
       width = 0;
       height = 0;
@@ -1826,15 +1847,22 @@ mdUXUI.directive('mdGetWidth', ['$window', 'mdStyle', function($window, mdStyle)
   return {
     link: function(scope, element, attrs) {
       var mdGetWidth = 0;
-      scope.mdGetWidth = parseInt((element.width() + mdGetWidth));
+      var getWidth = function() {
+        scope.mdGetWidth = (parseInt(element.width()) + mdGetWidth);
+      };
+      getWidth();
       attrs.$observe('mdGetWidth', function(value) {
         if (value) {
           mdGetWidth = parseInt(value);
-          scope.mdGetWidth = parseInt((element.width() + mdGetWidth));
+          getWidth();
         }
       });
       angular.element($window).on('resize', function() {
-        scope.mdGetWidth = parseInt((element.width() + mdGetWidth));
+        getWidth();
+        scope.$apply();
+      });
+      angular.element($window).on('load', function() {
+        getWidth();
         scope.$apply();
       });
     }
@@ -1845,17 +1873,34 @@ mdUXUI.directive('mdGetHeight', ['$window', 'mdStyle', function($window, mdStyle
   return {
     link: function(scope, element, attrs) {
       var mdGetHeight = 0;
-      scope.mdGetHeight = parseInt((element.height() + mdGetHeight));
+      var getHeight = function() {
+        scope.mdGetHeight = (parseInt(element.height()) + mdGetHeight);
+      };
+      getHeight();
       attrs.$observe('mdGetHeight', function(value) {
         if (value) {
           mdGetHeight = parseInt(value);
-          scope.mdGetHeight = parseInt((element.height() + mdGetHeight));
+          getHeight();
         }
       });
       angular.element($window).on('resize', function() {
-        scope.mdGetHeight = parseInt((element.height() + mdGetHeight));
+        getHeight();
+        scope.$apply();
+      });
+      angular.element($window).on('load', function() {
+        getHeight();
         scope.$apply();
       });
     }
   };
 }]);
+
+mdUXUI.directive('mdClear', ['$window', 'mdStyle', function($window, mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      element.css({'clear': 'both'});
+    }
+  };
+}]);
+
+})();

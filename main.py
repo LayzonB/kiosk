@@ -15,7 +15,7 @@ class ListProducts(webapp2.RequestHandler):
       params = {
         "active": "true",
         "limit": 10,
-        "start": self.request.get('start', None)
+        "starting_after": self.request.get('start', None)
       }
       data = stripe.Product.list(**params)
       self.response.write(data)
