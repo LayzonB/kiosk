@@ -5,7 +5,7 @@
 
 var dataLayer = [];
 
-var mdApp = angular.module('mdApp', ['mdUXUI', 'ngTouch']);
+var mdApp = angular.module('mdApp', ['mdUXUI', 'ngTouch', 'ngCookies']);
 
 mdApp.config([function() {
   
@@ -17,11 +17,37 @@ mdApp.run([function(){
 
 /*--------------------------------------------------Services--------------------------------------------------*/
 
-mdApp.factory('mdCartFactory', ['$http', function($http) {
+mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   
-  var setupCart = function() {
+  var templateCart = function() {
+    var test = {
+      'coupon': '',
+      'email': 'margotrobbie@example.com',
+      'items': [{
+        'currency': 'usd',
+        'description': 'Product Name',
+        'amount': 100,
+        'parent': 'sku_9qYkc73aiaE6VG',
+        'product': 'prod_80HnnViSIO0LWc',
+        'quantity': 1,
+        'type': 'sku'
+      }],
+      'metadata': {},
+      'shipping': {
+        'name': 'Margot Robbie',
+        'phone': '+12223334444',
+        'address': {
+          'country': 'US',
+          'state': 'California',
+          'city': 'Beverly Hills',
+          'postal_code': '91210',
+          'line1': 'Rodeo Drive 42',
+          'line2': ''
+        }
+      },
+      'amount': ''
+    };
     var cart = {
-      'currency': '',
       'coupon': '',
       'email': '',
       'items': [],
@@ -37,66 +63,104 @@ mdApp.factory('mdCartFactory', ['$http', function($http) {
           'line1': '',
           'line2': ''
         }
-      }
+      },
+      'amount': ''
     };
     return cart;
   };
   
-  var buildOrder = function(cart) {
-    var order = {
-      'currency': '',
-      'email': '',
-      'items': [],
-      'shipping': {
-        'name': '',
-        'phone': '',
-        'address': {
-          'country': '',
-          'state': '',
-          'city': '',
-          'postal_code': '',
-          'line1': '',
-          'line2': ''
-        }
-      }
-    };
-    order.currency = cart.currency;
-    if (cart.coupon) {
-      order.coupon = cart.coupon;
+  var setupCart = function(cart) {
+    var orderId = $cookies.get('orderId');
+    if (orderId) {
+      $http.get('order/' + orderId, {'cache': true}).then(function(response) {
+        cart = angular.merge(cart, response.data);
+        return cart;
+      });
+    } else {
+      cart = angular.merge(cart, templateCart());
+      return cart;
     }
-    order.email = cart.email;
-    angular.forEach(cart.items, function(item) {
-      var newItem = {
-        'type': item.type,
-        'parent': item.parent,
-        'quantity': item.quantity
-      };
-      order.items.push(newItem);
-    });
-    order.shipping.name = cart.shipping.name;
-    order.shipping.phone = cart.shipping.phone;
-    order.shipping.address.country = cart.shipping.address.country;
-    order.shipping.address.state = cart.shipping.address.state;
-    order.shipping.address.city = cart.shipping.address.city;
-    order.shipping.address.postal_code = cart.shipping.address.postal_code;
-    order.shipping.address.line1 = cart.shipping.address.line1;
-    order.shipping.address.line2 = cart.shipping.address.line2;
-    return order;
   };
   
-  var createOrder = function(cart) {
-    var order = buildOrder(cart);
-    $http.post('order/create', order, {'cache': true}).then(function(response) {
-      order = response.data;
-      return order;
-    });
+  var deleteCart = function(cart) {
+    var orderId = $cookies.get('orderId');
+    if (orderId) {
+      var order = {'id': orderId, 'status': 'canceled'};
+      $http.post('order/update', order, {'cache': true}).then(function(response) {
+        if (response.status === 200) {
+          $cookies.remove('orderId', orderId);
+          cart = angular.merge(cart, templateCart());
+        }
+        return cart;
+      });
+    } else {
+      cart = angular.merge(cart, templateCart());
+      return cart;
+    }
   };
   
   var updateOrder = function(cart) {
+    var order;
     if (cart.id) {
-      $http.get('order/' + cart.id.toString(), {'cache': true}).then(function(response) {
-        var order = response.data;
-        return order;
+      order = {
+        'id': '',
+        'selected_shipping_method': ''
+      };
+      order.id = cart.id;
+      order.selected_shipping_method = cart.selected_shipping_method;
+      if (cart.coupon) {
+        order.coupon = cart.coupon;
+      }
+      if (cart.status === 'canceled') {
+        order.status = cart.status;
+      }
+      $http.post('order/update', order, {'cache': true}).then(function(response) {
+        cart = angular.merge(cart, response.data);
+        return cart;
+      });
+    } else if (!cart.id) {
+      order = {
+        'currency': '',
+        'email': '',
+        'items': [],
+        'shipping': {
+          'name': '',
+          'phone': '',
+          'address': {
+            'country': '',
+            'state': '',
+            'city': '',
+            'postal_code': '',
+            'line1': '',
+            'line2': ''
+          }
+        }
+      };
+      order.currency = cart.currency;
+      if (cart.coupon) {
+        order.coupon = cart.coupon;
+      }
+      order.email = cart.email;
+      angular.forEach(cart.items, function(item) {
+        var newItem = {
+          'type': item.type,
+          'parent': item.parent,
+          'quantity': item.quantity
+        };
+        order.items.push(newItem);
+      });
+      order.shipping.name = cart.shipping.name;
+      order.shipping.phone = cart.shipping.phone;
+      order.shipping.address.country = cart.shipping.address.country;
+      order.shipping.address.state = cart.shipping.address.state;
+      order.shipping.address.city = cart.shipping.address.city;
+      order.shipping.address.postal_code = cart.shipping.address.postal_code;
+      order.shipping.address.line1 = cart.shipping.address.line1;
+      order.shipping.address.line2 = cart.shipping.address.line2;
+      $http.post('order/create', order, {'cache': true}).then(function(response) {
+        cart = angular.merge(cart, response.data);
+        $cookies.put('orderId', cart.id);
+        return cart;
       });
     }
   };
@@ -112,78 +176,90 @@ mdApp.factory('mdCartFactory', ['$http', function($http) {
   };
   
   var updateCartItem = function(cart, product, sku, quantity) {
-    if (typeof quantity === 'number') {
-      var newItem = {
-        'type': 'sku',
-        'parent': sku.id,
-        'quantity': quantity,
-        'amount': sku.price,
-        'currency': sku.currency,
-        'description': product.name,
-        'product': product.id
-      };
-      var updated = false;
-      angular.forEach(cart.items, function(item, key) {
-        if ((item.type === 'sku') && (item.parent === sku.id)) {
-          updated = true;
-          if (quantity > 0) {
-            cart.items[key] = newItem;
-          } else {
-            cart.items.splice(key, 1);
+    if (!cart.id) {
+      if (typeof quantity === 'number') {
+        var newItem = {
+          'type': 'sku',
+          'parent': sku.id,
+          'quantity': quantity,
+          'amount': (sku.price * quantity),
+          'currency': sku.currency,
+          'description': product.name,
+          'product': product.id
+        };
+        var updated = false;
+        angular.forEach(cart.items, function(item, key) {
+          if ((item.type === 'sku') && (item.parent === sku.id)) {
+            updated = true;
+            if (quantity > 0) {
+              cart.items[key] = newItem;
+            } else {
+              cart.items.splice(key, 1);
+            }
           }
+        });
+        if (!updated && (quantity > 0)) {
+          cart.items.push(newItem);
         }
-      });
-      if (!updated && (quantity > 0)) {
-        cart.items.push(newItem);
+        var amount = 0;
+        angular.forEach(cart.items, function(item, key) {
+          if (item.type === 'sku') {
+            amount = amount + item.amount;
+          }
+        });
+        cart.amount = amount;
       }
-      return cart;
     }
+    return cart;
   };
   
   var updateCartShipping = function(cart, name, value) {
-    if (name === 'country') {
-      cart.shipping.address.country = value;
-    }
-    if (name === 'state') {
-      cart.shipping.address.state = value;
-    }
-    if (name === 'city') {
-      cart.shipping.address.city = value;
-    }
-    if (name === 'postal_code') {
-      cart.shipping.address.postal_code = value;
-    }
-    if (name === 'line1') {
-      cart.shipping.address.line1 = value;
-    }
-    if (name === 'line2') {
-      cart.shipping.address.line2 = value;
-    }
-    if (name === 'name') {
-      cart.shipping.name = value;
-    }
-    if (name === 'phone') {
-      cart.shipping.phone = value;
-    }
-    if (name === 'email') {
-      cart.email = value;
+    if (!cart.id) {
+      if (name === 'country') {
+        cart.shipping.address.country = value;
+      }
+      if (name === 'state') {
+        cart.shipping.address.state = value;
+      }
+      if (name === 'city') {
+        cart.shipping.address.city = value;
+      }
+      if (name === 'postal_code') {
+        cart.shipping.address.postal_code = value;
+      }
+      if (name === 'line1') {
+        cart.shipping.address.line1 = value;
+      }
+      if (name === 'line2') {
+        cart.shipping.address.line2 = value;
+      }
+      if (name === 'name') {
+        cart.shipping.name = value;
+      }
+      if (name === 'phone') {
+        cart.shipping.phone = value;
+      }
+      if (name === 'email') {
+        cart.email = value;
+      }
     }
     return cart;
   };
   
   var updateCartShippingMethods = function(cart, value) {
-    angular.forEach(cart.shipping_methods, function(method) {
-      if (value === method.id) {
-        cart.selected_shipping_method = method.id;
-      }
-    });
+    if (cart.id) {
+      angular.forEach(cart.shipping_methods, function(method) {
+        if (value === method.id) {
+          cart.selected_shipping_method = method.id;
+        }
+      });
+    }
     return cart;
   };
   
   return {
     'setupCart': setupCart,
-    'buildOrder': buildOrder,
-    'createOrder': createOrder,
+    'deleteCart': deleteCart,
     'updateOrder': updateOrder,
     'getCartItemQuantity': getCartItemQuantity,
     'updateCartItem': updateCartItem,
@@ -945,6 +1021,242 @@ mdApp.component('mdCartCountries', {
   }
 });
 
+mdApp.component('mdCartShippingAddress', {
+  template: `<md-cards-item-multiline>
+              <md-base md-pad="24,16">
+                <md-base md-font="headline"
+                         md-content="{{$ctrl.settings.modals.cart.shipping.label}}"
+                         md-pad="0,0,16,0"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.name}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.address.line1}}"></md-base>
+                <md-base md-font="secondary" ng-if="$ctrl.cart.shipping.address.line2"
+                         md-content="{{$ctrl.cart.shipping.address.line2}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.address.city + ' ' + $ctrl.cart.shipping.address.state + ' ' + $ctrl.cart.shipping.address.postal_code}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.address.country}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.email}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.phone}}"></md-base>
+              </md-base>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    cart: '<'
+  }
+});
+
+mdApp.component('mdCartSummary', {
+  template: `<md-cards-item-multiline>
+              <md-base md-pad="24,16">
+                <md-base md-font="headline"
+                         md-content="{{$ctrl.settings.modals.cart.summary.label}}"
+                         md-pad="0,0,16,0"></md-base>
+                <md-action side="right">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0,16,0,0"
+                          md-content="{{$ctrl.settings.modals.cart.summary.amount.label}}"></td>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0"
+                          md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></td>
+                    </tr>
+                  </tbody>
+                </table>
+                </md-action>
+              </md-base>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    cart: '<'
+  }
+});
+
+mdApp.component('mdCartItemProduct', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-base md-font="secondary"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-action side="right" md-pad="16,0,0,0">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0,16,0,0"
+                          md-content="{{$ctrl.settings.modals.cart.items.sku.quantity.label}}"></td>
+                      <td md-font="secondary"
+                          md-misc="textLeft"
+                          md-pad="0"
+                          md-content="{{$ctrl.item.quantity}}"></td>
+                    </tr>
+                    <tr>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0,16,0,0"
+                          md-content="{{$ctrl.settings.modals.cart.items.sku.amount.label}}"></td>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0"
+                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </md-action>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemShipping', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.settings.modals.cart.items.shipping.label}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.parent"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.description"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.delivery_estimate"
+                       md-content="{{$ctrl.item.delivery_estimate}}"></md-base>
+              <md-action side="right" md-pad="16,0,0,0">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0,16,0,0"
+                          md-content="{{$ctrl.settings.modals.cart.items.shipping.amount.label}}"></td>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0"
+                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </md-action>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemTax', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.settings.modals.cart.items.tax.label}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.parent"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.description"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-action side="right" md-pad="16,0,0,0">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0,16,0,0"
+                          md-content="{{$ctrl.settings.modals.cart.items.tax.amount.label}}"></td>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0"
+                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </md-action>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemDiscount', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.settings.modals.cart.items.discount.label}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.parent"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.description"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-action side="right" md-pad="16,0,0,0">
+                <table>
+                  <tbody>
+                    <tr>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0,16,0,0"
+                          md-content="{{$ctrl.settings.modals.cart.items.discount.amount.label}}"></td>
+                      <td md-font="secondary"
+                          md-misc="textRight"
+                          md-pad="0"
+                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </md-action>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemView', {
+  template: `<md-cards-item-multiline>
+              <md-cart-item-product ng-if="($ctrl.value.type === 'sku')"
+                                    settings="$ctrl.settings"
+                                    item="$ctrl.value"></md-cart-item-product>
+              <md-cart-item-shipping ng-if="($ctrl.value.type === 'shipping')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-shipping>
+              <md-cart-item-tax ng-if="($ctrl.value.type === 'tax')"
+                                settings="$ctrl.settings"
+                                item="$ctrl.value"></md-cart-item-tax>
+              <md-cart-item-discount ng-if="($ctrl.value.type === 'discount')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-discount>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    value: '<'
+  }
+});
+
+mdApp.component('mdCartItemClickable', {
+  template: `<md-cards-item-multiline-clickable value="$ctrl.value"
+                                                on-click="$ctrl.onClick({productId: value.product, skuId: value.parent})">
+              <md-cart-item-product ng-if="($ctrl.value.type === 'sku')"
+                                    settings="$ctrl.settings"
+                                    item="$ctrl.value"></md-cart-item-product>
+              <md-cart-item-shipping ng-if="($ctrl.value.type === 'shipping')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-shipping>
+              <md-cart-item-tax ng-if="($ctrl.value.type === 'tax')"
+                                settings="$ctrl.settings"
+                                item="$ctrl.value"></md-cart-item-tax>
+              <md-cart-item-discount ng-if="($ctrl.value.type === 'discount')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-discount>
+            </md-cards-item-multiline-clickable>`,
+  bindings: {
+    settings: '<',
+    value: '<',
+    onClick: '&'
+  }
+});
+
 mdApp.component('mdCartEmpty', {
   template: `<md-cart-page page="-1" current-page="-1">
               <md-list>
@@ -962,48 +1274,14 @@ mdApp.component('mdCartEmpty', {
 mdApp.component('mdCartProducts', {
   template: `<md-cart-page page="1" current-page="$ctrl.step">
               <md-cards>
-                <md-cards-item-multiline-clickable ng-repeat="item in $ctrl.cart.items"
-                                                   value="item" on-click="$ctrl.onSelect({productId: value.product, skuId: value.parent})">
-                  <md-base md-pad="24,16">
-                    <md-base md-font="headline" md-content="{{item.description}}"></md-base>
-                    <md-base md-font="secondary" md-content="{{item.parent}}" md-pad="0,0,16,0"></md-base>
-                    <md-action side="right">
-                    <table>
-                      <tbody>
-                        <tr>
-                          <td md-font="secondary"
-                              md-misc="textRight"
-                              md-pad="0,16,0,0"
-                              md-content="{{$ctrl.settings.modals.cart.items.amount.label}}"></td>
-                          <td md-font="secondary"
-                              md-misc="textRight"
-                              md-pad="0"
-                              md-content="{{item.amount | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()]}}"></td>
-                        </tr>
-                        <tr>
-                          <td md-font="secondary"
-                              md-misc="textRight"
-                              md-pad="0,16,0,0"
-                              md-content="{{$ctrl.settings.modals.cart.items.quantity.label}}"></td>
-                          <td md-font="secondary"
-                              md-misc="textRight"
-                              md-pad="0"
-                              md-content="{{item.quantity}}"></td>
-                        </tr>
-                        <tr>
-                          <td md-font="secondary"
-                              md-misc="textRight"
-                              md-pad="0,16,0,0"
-                              md-content="{{$ctrl.settings.modals.cart.items.subtotal.label}}"></td>
-                          <td md-font="secondary"
-                              md-misc="textRight"
-                              md-pad="0" md-content="{{(item.amount * item.quantity) | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()]}}"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    </md-action>
-                  </md-base>
-                </md-cards-item-multiline>
+                <md-cart-item-clickable ng-repeat="item in $ctrl.cart.items"
+                                        value="item"
+                                        settings="$ctrl.settings"
+                                        on-click="$ctrl.onSelect({productId: productId, skuId: skuId})">
+                </md-cart-item-clickable>
+                <md-cart-summary settings="$ctrl.settings"
+                                 cart="$ctrl.cart">
+                </md-cart-summary>
               </md-cards>
               <md-cart-button name="$ctrl.settings.modals.cart.steps.products"
                               on-click="$ctrl.onNextStep()"></md-cart-button>
@@ -1148,7 +1426,7 @@ mdApp.component('mdCartShippingMethods', {
                                   on-select="$ctrl.onSelectShippingMethod({value: sample})"></md-radio-input>
                 </md-form>
               </md-list>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.methods"
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.shipping_methods"
                               on-click="$ctrl.nextStep()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
@@ -1178,6 +1456,31 @@ mdApp.component('mdCartShippingMethods', {
     cart: '<',
     step: '<',
     onSelectShippingMethod: '&',
+    onNextStep: '&'
+  }
+});
+
+mdApp.component('mdCartReview', {
+  template: `<md-cart-page page="4" current-page="$ctrl.step">
+              <md-cards>
+                <md-cart-shipping-address settings="$ctrl.settings"
+                                          cart="$ctrl.cart">
+                </md-cart-shipping-address>
+                <md-cart-item-view ng-repeat="item in $ctrl.cart.items"
+                                   value="item"
+                                   settings="$ctrl.settings">
+                </md-cart-item-view>
+                <md-cart-summary settings="$ctrl.settings"
+                                 cart="$ctrl.cart">
+                </md-cart-summary>
+              </md-cards>
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.review"
+                              on-click="$ctrl.onNextStep()"></md-cart-button>
+            </md-cart-page>`,
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
     onNextStep: '&'
   }
 });
@@ -1218,6 +1521,11 @@ mdApp.component('mdCart', {
                                         cart="$ctrl.cart"
                                         on-select-shipping-method="$ctrl.onUpdateShippingMethods({value: value})"
                                         on-next-step="$ctrl.progress()"></md-cart-shipping-methods>
+              <md-cart-review settings="$ctrl.settings"
+                              ng-if="$ctrl.cart.items.length"
+                              step="$ctrl.step"
+                              cart="$ctrl.cart"
+                              on-next-step="$ctrl.progress()"></md-cart-review>
             </md-full-screen>
             <md-cart-delete settings="$ctrl.settings"
                             on-close="$ctrl.deleteCart(value)"
@@ -1253,8 +1561,8 @@ mdApp.component('mdCart', {
     };
     
     ctrl.progress = function() {
-      if (ctrl.step === 2) {
-        ctrl.onCreateOrder();
+      if ((ctrl.step === 2) || (ctrl.step === 3)) {
+        ctrl.onUpdateOrder();
       }
       ctrl.step = ctrl.step + 1;
     };
@@ -1275,7 +1583,7 @@ mdApp.component('mdCart', {
     cart: '<',
     onOpenProduct: '&',
     onUpdateShipping: '&',
-    onCreateOrder: '&',
+    onUpdateOrder: '&',
     onUpdateShippingMethods: '&',
     onDeleteCart: '&',
     onExit: '&'
@@ -1746,7 +2054,7 @@ mdApp.component('mdHome', {
                      ng-if="$ctrl.cartDialog"
                      on-open-product="$ctrl.openProduct(productId, skuId)"
                      on-update-shipping="$ctrl.updateShipping(name, value)"
-                     on-create-order="$ctrl.createOrder()"
+                     on-update-order="$ctrl.updateOrder()"
                      on-update-shipping-methods="$ctrl.updateShippingMethods(value)"
                      on-delete-cart="$ctrl.deleteCart()"
                      on-exit="$ctrl.closeCart()"></md-cart>
@@ -1792,8 +2100,8 @@ mdApp.component('mdHome', {
       mdCartFactory.updateCartShipping(ctrl.cart, name, value);
     };
     
-    ctrl.createOrder = function() {
-      ctrl.cart = mdCartFactory.createOrder(ctrl.cart);
+    ctrl.updateOrder = function() {
+      mdCartFactory.updateOrder(ctrl.cart);
     };
     
     ctrl.updateShippingMethods = function(value) {
@@ -1801,8 +2109,9 @@ mdApp.component('mdHome', {
     };
     
     ctrl.deleteCart = function() {
-      ctrl.cart = mdCartFactory.setupCart();
+      ctrl.cart = {};
       ctrl.cart.currency = ctrl.settings.account.default_currency;
+      mdCartFactory.deleteCart(ctrl.cart);
     };
     
     ctrl.$onInit = function() {
@@ -1816,8 +2125,9 @@ mdApp.component('mdHome', {
         });
         $http.get('account', {'cache': true}).then(function(response) {
           ctrl.settings.account = response.data;
-          ctrl.cart = mdCartFactory.setupCart();
+          ctrl.cart = {};
           ctrl.cart.currency = ctrl.settings.account.default_currency;
+          mdCartFactory.setupCart(ctrl.cart);
         });
         ctrl.productId = false;
         ctrl.cartDialog = false;

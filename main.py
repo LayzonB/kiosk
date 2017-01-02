@@ -79,6 +79,22 @@ class CreateOrder(webapp2.RequestHandler):
       self.response.write('')
 
 
+class UpdateOrder(webapp2.RequestHandler):
+
+  def post(self):
+    self.response.headers['Content-Type'] = 'application/json'
+    try:
+      params = json.loads(self.request.body)
+      # params filtering/cleanup/validation required
+      order = stripe.Order.retrieve(params.pop('id', None))
+      for key, value in params.iteritems():
+        order[key] = value
+      data = order.save()
+      self.response.write(data)
+    except:
+      self.response.write('')
+
+
 class PayOrder(webapp2.RequestHandler):
 
   def post(self):
@@ -136,6 +152,7 @@ APP = webapp2.WSGIApplication([webapp2.Route(r'/products', handler=ListProducts)
                               webapp2.Route(r'/product/<product:(.*)>', handler=ViewProduct),
                               webapp2.Route(r'/account', handler=ViewAccount),
                               webapp2.Route(r'/order/create', handler=CreateOrder),
+                              webapp2.Route(r'/order/update', handler=UpdateOrder),
                               webapp2.Route(r'/order/pay', handler=PayOrder),
                               webapp2.Route(r'/order/<order:(.*)>', handler=ViewOrder)],
                               debug=True)

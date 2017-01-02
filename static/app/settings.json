@@ -13,25 +13,35 @@
       "steps": {
         "products": "Proceed to Checkout",
         "shipping": "Select Shipping Method",
-        "methods": "Review Cart",
+        "shipping_methods": "Review Cart",
         "review": "Pay"
       },
       "items": {
-        "quantity": {
-          "label": "Quantity"
+        "sku": {
+          "quantity": {
+            "label": "Quantity"
+          },
+          "amount": {
+            "label": "Subtotal"
+          }
         },
-        "amount": {
-          "label": "Amount"
+        "shipping": {
+          "label": "Shipping method",
+          "amount": {
+            "label": "Subtotal"
+          }
         },
-        "subtotal": {
-          "label": "Subtotal"
+        "tax": {
+          "label": "Tax",
+          "amount": {
+            "label": "Subtotal"
+          }
         },
-        "summary": {
-          "label": "Summary",
-          "net_total": "Net total",
-          "shipping": "Shipping and handling",
-          "taxes": "Taxes",
-          "total": "Total"
+        "discount": {
+          "label": "Discount",
+          "amount": {
+            "label": "Subtotal"
+          }
         }
       },
       "email": {
@@ -131,6 +141,12 @@
       },
       "shipping_methods": {
         "label": "Shipping methods"
+      },
+      "summary": {
+        "label": "Summary",
+        "amount": {
+          "label": "Total"
+        }
       }
     },
     "product": {
