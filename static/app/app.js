@@ -1367,6 +1367,7 @@ mdApp.component('mdCartShipping', {
                                  label="$ctrl.settings.modals.cart.email.label"
                                  instructions="$ctrl.settings.modals.cart.email.instructions"
                                  value="$ctrl.cart.email"
+                                 pattern="$ctrl.validEmail"
                                  on-change="$ctrl.onUpdateShipping({name: name, value: value})"></md-text-input>
                   <md-text-input name="'phone'"
                                  required="true"
@@ -1382,6 +1383,10 @@ mdApp.component('mdCartShipping', {
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
+    
+    ctrl.validEmail = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+    
+    ctrl.validPhone = /^\+?([0-9]{2})\)?[-. ]?([0-9]{4})[-. ]?([0-9]{4})$/;
     
     ctrl.register = function(validator) {
       ctrl.validator = validator;

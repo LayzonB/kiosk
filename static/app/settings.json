@@ -51,7 +51,8 @@
           "required": "This field requires \"text\" value!",
           "minlength": "",
           "maxlength": "",
-          "pattern": ""
+          "pattern": "Please type in a valid email address.",
+          "email": "Please type in a valid email address."
         }
       },
       "shipping": {
@@ -73,7 +74,7 @@
             "required": "This field requires \"text\" value!",
             "minlength": "",
             "maxlength": "",
-            "pattern": ""
+            "pattern": "Please type in a valid phone number."
           }
         },
         "address": {
