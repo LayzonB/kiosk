@@ -1,7 +1,8 @@
 {
+  "stripePublishableKey": "pk_test_DgknwndUrYHbYQJHHAjv1RWL",
   "modals": {
     "cart": {
-      "empty": "Shopping cart empty",
+      "empty": "Cart empty",
       "delete": {
         "title": "Empty the cart at once?",
         "message": "If you empty the cart all of its items and settings will be lost permanently.",
@@ -14,7 +15,8 @@
         "products": "Proceed to Checkout",
         "shipping": "Select Shipping Method",
         "shipping_methods": "Review Cart",
-        "review": "Pay"
+        "review": "Pay",
+        "pay": "Pay"
       },
       "items": {
         "sku": {
@@ -147,6 +149,48 @@
         "label": "Summary",
         "amount": {
           "label": "Total"
+        }
+      },
+      "card": {
+        "number": {
+          "label": "Card number",
+          "instructions": {
+            "info": "",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "exp_month": {
+          "label": "Card expiration (Month)",
+          "instructions": {
+            "info": "Card expiration printed on the front of your card.",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "exp_year": {
+          "label": "Card expiration (Year)",
+          "instructions": {
+            "info": "Card expiration printed on the front of your card.",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "cvc": {
+          "label": "CVC",
+          "instructions": {
+            "info": "Card verification code printed on the back of your card.",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
         }
       }
     },

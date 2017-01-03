@@ -800,6 +800,34 @@ mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
   };
 }]);
 
+mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var s = {
+        'min-width': '64px',
+        'height': '36px',
+        'padding': '6px 8px',
+        'margin': '6px 4px',
+        'border-radius': '2px',
+        'overflow': 'hidden',
+        'background': 'rgba(255, 255, 255, 1)',
+        'color': 'rgba(0, 0, 0, 0.87)',
+        'cursor': 'pointer',
+        'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
+        'transition': 'box-shadow 0.2s linear 0s',
+      };
+      element.css(mdStyle.font('button', mdStyle.general(s)));
+      mdStyle.ripple(scope, element, attrs, 'tracking-dark');
+      element.on('mousedown', function(event) {
+        element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
+      });
+      element.on('mouseup', function(event) {
+        element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
+      });
+    }
+  };
+}]);
+
 mdUXUI.directive('mdButtonComposite', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
@@ -1418,6 +1446,12 @@ mdUXUI.directive('mdCardsCellTile', ['mdStyle', function(mdStyle) {
         'transition': 'box-shadow 0.2s linear 0s',
       };
       element.css(mdStyle.general(s));
+      element.on('mousedown', function(event) {
+        element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
+      });
+      element.on('mouseup', function(event) {
+        element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
+      });
     }
   };
 }]);
@@ -1500,6 +1534,12 @@ mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
         'transition': 'box-shadow 0.2s linear 0s',
       };
       element.css(mdStyle.general(s));
+      element.on('mousedown', function(event) {
+        element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
+      });
+      element.on('mouseup', function(event) {
+        element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
+      });
     }
   };
 }]);
