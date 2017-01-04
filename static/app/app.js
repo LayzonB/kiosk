@@ -72,7 +72,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     };
     $http.get('account', {'cache': true}).then(function(response) {
       var account = response.data;
-      angular.merge(cart, testCart);
+      angular.merge(cart, newCart);
       cart.currency = account.default_currency;
       return cart;
     });
@@ -255,36 +255,42 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
 
 mdApp.filter('formatCountry', [function() {
   return function(input, countries) {
-    var output = '';
-    angular.forEach(countries, function(country){
-      if (country.code === input) {
-        output = country.name;
-      }
-    });
-    return output;
+    if (countries) {
+      var output = '';
+      angular.forEach(countries, function(country){
+        if (country.code === input) {
+          output = country.name;
+        }
+      });
+      return output;
+    }
   };
 }]);
 
 mdApp.filter('formatCurrency', [function() {
   return function(input, currency) {
-    var output = parseFloat(input) || 0;
-    var formater = '1';
-    for (var i = 0; i < currency.decimal_digits; i++) {
-      formater = formater + '0';
+    if (currency) {
+      var output = parseFloat(input) || 0;
+      var formater = '1';
+      for (var i = 0; i < currency.decimal_digits; i++) {
+        formater = formater + '0';
+      }
+      formater = parseInt(formater);
+      output = output / formater;
+      output = output.toFixed(currency.decimal_digits);
+      output = output.toString();
+      return output;
     }
-    formater = parseInt(formater);
-    output = output / formater;
-    output = output.toFixed(currency.decimal_digits);
-    output = output.toString();
-    return output;
   };
 }]);
 
 mdApp.filter('formatCurrencyPrefix', [function() {
   return function(input, currency) {
-    var output = currency.code;
-    output = output + input.toString();
-    return output;
+    if (currency) {
+      var output = currency.code;
+      output = output + input.toString();
+      return output;
+    }
   };
 }]);
 
@@ -622,6 +628,7 @@ mdApp.component('mdTextInput', {
                        ng-model="$ctrl.value"
                        ng-model-options="{allowInvalid: false}"
                        ng-disabled="$ctrl.disabled"
+                       md-disabled="$ctrl.disabled"
                        ng-required="$ctrl.required"
                        ng-trim="$ctrl.trim"
                        ng-minlength="$ctrl.minlength"
@@ -701,6 +708,7 @@ mdApp.component('mdSelectionInput', {
                               ng-model="$ctrl.value"
                               ng-model-options="{allowInvalid: false}"
                               ng-disabled="$ctrl.disabled"
+                              md-disabled="$ctrl.disabled"
                               ng-required="$ctrl.required"
                               ng-trim="$ctrl.trim"
                               ng-minlength="$ctrl.minlength"
@@ -898,22 +906,26 @@ mdApp.component('mdCartPage', {
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
+    ctrl.positionPage = function() {
+      if (ctrl.currentPage === ctrl.page) {
+        ctrl.top = '56px';
+        ctrl.bottom = '0';
+      } else if (ctrl.currentPage > ctrl.page) {
+        ctrl.top = '-100%';
+        ctrl.bottom = '100%';
+      } else if (ctrl.currentPage < ctrl.page) {
+        ctrl.top = '100%';
+        ctrl.bottom = '-100%';
+      }
+    };
+    
     ctrl.$onInit = function() {
-      
+      ctrl.positionPage();
     };
     
     ctrl.$onChanges = function(changes) {
       if (changes.currentPage && changes.currentPage.currentValue) {
-        if (ctrl.currentPage === ctrl.page) {
-          ctrl.top = '56px';
-          ctrl.bottom = '0';
-        } else if (ctrl.currentPage > ctrl.page) {
-          ctrl.top = '-100%';
-          ctrl.bottom = '100%';
-        } else if (ctrl.currentPage < ctrl.page) {
-          ctrl.top = '100%';
-          ctrl.bottom = '-100%';
-        }
+        ctrl.positionPage();
       }
     };
   }],
@@ -936,20 +948,15 @@ mdApp.component('mdCartDelete', {
                 <md-action side="right">
                   <button md-button-text-flat
                           ng-click="$ctrl.cancel()"
-                          md-content="{{$ctrl.settings.modals.cart.delete.buttons.cancel}}"></button>
+                          md-content="{{$ctrl.settings.modals.cart.delete.actions.cancel}}"></button>
                   <button md-button-text-flat
                           ng-click="$ctrl.ok()"
-                          md-content="{{$ctrl.settings.modals.cart.delete.buttons.ok}}"></button>
+                          md-content="{{$ctrl.settings.modals.cart.delete.actions.ok}}"></button>
                 </md-action>
               </md-base>
             </md-confirmation>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
-    
-    ctrl.$onInit = function() {
-      ctrl.dialog = true;
-      ctrl.delete = false;
-    };
     
     ctrl.cancel = function() {
       ctrl.delete = false;
@@ -961,8 +968,9 @@ mdApp.component('mdCartDelete', {
       ctrl.dialog = false;
     };
     
-    ctrl.$onChanges = function(changes) {
-      
+    ctrl.$onInit = function() {
+      ctrl.dialog = true;
+      ctrl.delete = false;
     };
   }],
   bindings: {
@@ -1003,22 +1011,32 @@ mdApp.component('mdCartCountries', {
   }
 });
 
+mdApp.component('mdCartStatus', {
+  template: `<md-cards-item-multiline>
+              <md-base md-pad="24,16">
+                <md-base md-font="headline"
+                         md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.id}}"></md-base>
+              </md-base>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    cart: '<'
+  }
+});
+
 mdApp.component('mdCartShippingAddress', {
   template: `<md-cards-item-multiline>
               <md-base md-pad="24,16">
                 <md-base md-font="headline"
-                         md-content="{{$ctrl.settings.modals.cart.shipping.label}}"
-                         md-pad="0,0,16,0"></md-base>
-                <md-base md-font="secondary"
                          md-content="{{$ctrl.cart.shipping.name}}"></md-base>
                 <md-base md-font="secondary"
                          md-content="{{$ctrl.cart.shipping.address.line1}}"></md-base>
                 <md-base md-font="secondary" ng-if="$ctrl.cart.shipping.address.line2"
                          md-content="{{$ctrl.cart.shipping.address.line2}}"></md-base>
                 <md-base md-font="secondary"
-                         md-content="{{$ctrl.cart.shipping.address.city + ' ' + $ctrl.cart.shipping.address.state + ' ' + $ctrl.cart.shipping.address.postal_code}}"></md-base>
-                <md-base md-font="secondary"
-                         md-content="{{$ctrl.cart.shipping.address.country}}"></md-base>
+                         md-content="{{$ctrl.cart.shipping.address.city + ', ' + $ctrl.cart.shipping.address.state + ', ' + $ctrl.cart.shipping.address.postal_code + ', ' + $ctrl.cart.shipping.address.country}}"></md-base>
                 <md-base md-font="secondary"
                          md-content="{{$ctrl.cart.email}}"></md-base>
                 <md-base md-font="secondary"
@@ -1103,11 +1121,9 @@ mdApp.component('mdCartItemProduct', {
 mdApp.component('mdCartItemShipping', {
   template: `<md-base md-pad="24,16">
               <md-base md-font="headline"
-                       md-content="{{$ctrl.settings.modals.cart.items.shipping.label}}"></md-base>
+                       md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.parent"
                        md-content="{{$ctrl.item.parent}}"></md-base>
-              <md-base md-font="secondary" ng-if="$ctrl.item.description"
-                       md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.delivery_estimate"
                        md-content="{{$ctrl.item.delivery_estimate}}"></md-base>
               <md-action side="right" md-pad="16,0,0,0">
@@ -1136,11 +1152,9 @@ mdApp.component('mdCartItemShipping', {
 mdApp.component('mdCartItemTax', {
   template: `<md-base md-pad="24,16">
               <md-base md-font="headline"
-                       md-content="{{$ctrl.settings.modals.cart.items.tax.label}}"></md-base>
+                       md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.parent"
                        md-content="{{$ctrl.item.parent}}"></md-base>
-              <md-base md-font="secondary" ng-if="$ctrl.item.description"
-                       md-content="{{$ctrl.item.description}}"></md-base>
               <md-action side="right" md-pad="16,0,0,0">
                 <table>
                   <tbody>
@@ -1167,11 +1181,9 @@ mdApp.component('mdCartItemTax', {
 mdApp.component('mdCartItemDiscount', {
   template: `<md-base md-pad="24,16">
               <md-base md-font="headline"
-                       md-content="{{$ctrl.settings.modals.cart.items.discount.label}}"></md-base>
+                       md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.parent"
                        md-content="{{$ctrl.item.parent}}"></md-base>
-              <md-base md-font="secondary" ng-if="$ctrl.item.description"
-                       md-content="{{$ctrl.item.description}}"></md-base>
               <md-action side="right" md-pad="16,0,0,0">
                 <table>
                   <tbody>
@@ -1240,16 +1252,17 @@ mdApp.component('mdCartItemClickable', {
 });
 
 mdApp.component('mdCartEmpty', {
-  template: `<md-cart-page page="-1" current-page="-1">
+  template: `<md-cart-page page="-1" current-page="$ctrl.step">
               <md-list>
                 <md-list-item-multiline>
-                  <md-base md-font="display1" md-misc="textCenter" md-pad="0,24" md-content="{{$ctrl.settings.modals.cart.empty}}">
+                  <md-base md-font="display1" md-misc="textCenter" md-pad="0,24" md-content="{{$ctrl.settings.modals.cart.steps.zero}}">
                   </md-base>
                 </md-list-item-multiline>
               </md-list>
             </md-cart-page>`,
   bindings: {
-    settings: '<'
+    settings: '<',
+    step: '<'
   }
 });
 
@@ -1265,7 +1278,7 @@ mdApp.component('mdCartProducts', {
                                  cart="$ctrl.cart">
                 </md-cart-summary>
               </md-cards>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.products"
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.one"
                               on-click="$ctrl.onSubmit()"></md-cart-button>
             </md-cart-page>`,
   bindings: {
@@ -1349,7 +1362,7 @@ mdApp.component('mdCartShipping', {
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                 </md-form>
               </md-list>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.shipping"
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.two"
                               on-click="$ctrl.submit()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
@@ -1393,7 +1406,7 @@ mdApp.component('mdCartShippingMethods', {
                                   on-select="$ctrl.onUpdate({name: name, value: value})"></md-radio-input>
                 </md-form>
               </md-list>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.shipping_methods"
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.three"
                               on-click="$ctrl.submit()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
@@ -1432,7 +1445,7 @@ mdApp.component('mdCartReview', {
                                  cart="$ctrl.cart">
                 </md-cart-summary>
               </md-cards>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.review"
+              <md-cart-button name="$ctrl.settings.modals.cart.steps.four"
                               on-click="$ctrl.onSubmit()"></md-cart-button>
             </md-cart-page>`,
   bindings: {
@@ -1475,11 +1488,15 @@ mdApp.component('mdCartPay', {
                                  instructions="$ctrl.settings.modals.cart.card.cvc.instructions"
                                  value="$ctrl.cart.card.cvc"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-list-item-multiline>
+                    <md-action side="center">
+                      <button md-button-text-raised
+                              md-content="{{$ctrl.settings.modals.cart.steps.five + ' ' + ($ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()])}}"
+                              ng-click="$ctrl.submit()"></button>
+                    </md-action>
+                  </md-list-item-multiline>
                 </md-form>
               </md-list>
-              <button md-button-text-raised
-                      md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"
-                      ng-click="$ctrl.submit()"></button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
@@ -1507,6 +1524,31 @@ mdApp.component('mdCartPay', {
   }
 });
 
+mdApp.component('mdCartEnd', {
+  template: `<md-cart-page page="6" current-page="$ctrl.step">
+              <md-cards>
+                <md-cart-status settings="$ctrl.settings"
+                                cart="$ctrl.cart">
+                </md-cart-status>
+                <md-cart-shipping-address settings="$ctrl.settings"
+                                          cart="$ctrl.cart">
+                </md-cart-shipping-address>
+                <md-cart-item-view ng-repeat="item in $ctrl.cart.items"
+                                   value="item"
+                                   settings="$ctrl.settings">
+                </md-cart-item-view>
+                <md-cart-summary settings="$ctrl.settings"
+                                 cart="$ctrl.cart">
+                </md-cart-summary>
+              </md-cards>
+            </md-cart-page>`,
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<'
+  }
+});
+
 mdApp.component('mdCart', {
   template: `<md-full-screen side="'right'" active="$ctrl.dialog" on-close="$ctrl.onExit()">
               <md-app-bar>
@@ -1523,9 +1565,10 @@ mdApp.component('mdCart', {
                 </md-actions>
               </md-app-bar>
               <md-cart-empty settings="$ctrl.settings"
-                             ng-if="($ctrl.step === -1)"></md-cart-empty>
+                             step="$ctrl.step"
+                             ng-if="($ctrl.step < 2)"></md-cart-empty>
               <md-cart-products settings="$ctrl.settings"
-                                ng-if="(($ctrl.step > 0) && ($ctrl.step < 3))"
+                                ng-if="(($ctrl.step > -1) && ($ctrl.step < 3))"
                                 step="$ctrl.step"
                                 cart="$ctrl.cart"
                                 on-select="$ctrl.onOpenProduct({productId: productId, skuId: skuId})"
@@ -1554,6 +1597,10 @@ mdApp.component('mdCart', {
                            cart="$ctrl.cart"
                            on-update="$ctrl.onUpdateCart({name: name, value: value})"
                            on-submit="$ctrl.stepSix()"></md-cart-pay>
+              <md-cart-end settings="$ctrl.settings"
+                           ng-if="($ctrl.step > 4)"
+                           step="$ctrl.step"
+                           cart="$ctrl.cart"></md-cart-end>
             </md-full-screen>
             <md-cart-delete settings="$ctrl.settings"
                             on-close="$ctrl.deleteCart(value)"
@@ -1593,13 +1640,13 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepThree = function() {
-      ctrl.onUpdateOrder();
       ctrl.step = 3;
+      ctrl.onUpdateOrder();
     };
     
     ctrl.stepFour = function() {
-      ctrl.onUpdateOrder();
       ctrl.step = 4;
+      ctrl.onUpdateOrder();
     };
     
     ctrl.stepFive = function() {
@@ -1607,11 +1654,11 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepSix = function() {
-      ctrl.onPayOrder();
       ctrl.step = 6;
+      ctrl.onPayOrder();
     };
     
-    ctrl.setStep = function() {
+    ctrl.$onInit = function() {
       if (ctrl.cart.status === 'new') {
         if (ctrl.cart.items.length > 0) {
           ctrl.step = 1;
@@ -1619,22 +1666,28 @@ mdApp.component('mdCart', {
           ctrl.step = -1;
         }
       } else if (ctrl.cart.status === 'created') {
-        ctrl.step = 3;
+        if (ctrl.cart.shipping_methods.length > 0) {
+          ctrl.step = 3;
+        } else {
+          ctrl.step = 4;
+        }
       } else if (ctrl.cart.status === 'paid') {
         ctrl.step = 6;
       }
-    };
-    
-    ctrl.$onInit = function() {
-      ctrl.setStep();
       ctrl.dialog = true;
       ctrl.deleteDialog = false;
       ctrl.countriesDialog = false;
     };
     
-    ctrl.$onChanges = function(changes) {
-      if (changes.cart) {
-        ctrl.setStep();
+    ctrl.$doCheck = function() {
+      if (ctrl.cart.status === 'new') {
+        if (ctrl.cart.items.length === 0) {
+          ctrl.step = -1;
+        }
+      } else if (ctrl.cart.status === 'created') {
+        if ((ctrl.cart.shipping_methods.length === 0) && (ctrl.step === 3)) {
+          ctrl.step = 4;
+        }
       }
     };
   }],
@@ -1661,6 +1714,7 @@ mdApp.component('mdSkuQuantity', {
                          ng-model="$ctrl.value"
                          ng-model-options="{allowInvalid: false}"
                          ng-disabled="$ctrl.disabled"
+                         md-disabled="$ctrl.disabled"
                          ng-required="$ctrl.required"
                          ng-trim="$ctrl.trim"
                          ng-min="$ctrl.min"

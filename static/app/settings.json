@@ -2,21 +2,21 @@
   "stripePublishableKey": "pk_test_DgknwndUrYHbYQJHHAjv1RWL",
   "modals": {
     "cart": {
-      "empty": "Cart empty",
       "delete": {
         "title": "Empty the cart at once?",
         "message": "If you empty the cart all of its items and settings will be lost permanently.",
-        "buttons": {
+        "actions": {
           "cancel": "Cancel",
           "ok": "Empty"
         }
       },
       "steps": {
-        "products": "Proceed to Checkout",
-        "shipping": "Select Shipping Method",
-        "shipping_methods": "Review Cart",
-        "review": "Pay",
-        "pay": "Pay"
+        "zero": "Cart empty",
+        "one": "Proceed to Checkout",
+        "two": "Select Shipping Method",
+        "three": "Review Cart",
+        "four": "Pay",
+        "five": "Pay"
       },
       "items": {
         "sku": {
