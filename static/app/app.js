@@ -288,7 +288,7 @@ mdApp.filter('formatCurrencyPrefix', [function() {
   return function(input, currency) {
     if (currency) {
       var output = currency.code;
-      output = output + input.toString();
+      output = output + ' ' + input.toString();
       return output;
     }
   };
@@ -988,6 +988,7 @@ mdApp.component('mdCartCountries', {
                                           value="option.code"
                                           sample="$ctrl.sample"
                                           disabled="option.disabled"
+                                          dialog="true"
                                           on-click="$ctrl.selectOption(value)">
                   </md-list-item-clickable>
                 </md-list>
@@ -1011,12 +1012,12 @@ mdApp.component('mdCartCountries', {
   }
 });
 
-mdApp.component('mdCartStatus', {
+mdApp.component('mdCartSummary', {
   template: `<md-cards-item-multiline>
               <md-base md-pad="24,16">
                 <md-base md-font="headline"
                          md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></md-base>
-                <md-base md-font="secondary"
+                <md-base md-font="secondary" ng-if="$ctrl.cart.id"
                          md-content="{{$ctrl.cart.id}}"></md-base>
               </md-base>
             </md-cards-item-multiline>`,
@@ -1049,68 +1050,15 @@ mdApp.component('mdCartShippingAddress', {
   }
 });
 
-mdApp.component('mdCartSummary', {
-  template: `<md-cards-item-multiline>
-              <md-base md-pad="24,16">
-                <md-base md-font="headline"
-                         md-content="{{$ctrl.settings.modals.cart.summary.label}}"
-                         md-pad="0,0,16,0"></md-base>
-                <md-action side="right">
-                <table>
-                  <tbody>
-                    <tr>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0,16,0,0"
-                          md-content="{{$ctrl.settings.modals.cart.summary.amount.label}}"></td>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0"
-                          md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></td>
-                    </tr>
-                  </tbody>
-                </table>
-                </md-action>
-              </md-base>
-            </md-cards-item-multiline>`,
-  bindings: {
-    settings: '<',
-    cart: '<'
-  }
-});
-
 mdApp.component('mdCartItemProduct', {
   template: `<md-base md-pad="24,16">
               <md-base md-font="headline"
                        md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary"
                        md-content="{{$ctrl.item.parent}}"></md-base>
-              <md-action side="right" md-pad="16,0,0,0">
-                <table>
-                  <tbody>
-                    <tr>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0,16,0,0"
-                          md-content="{{$ctrl.settings.modals.cart.items.sku.quantity.label}}"></td>
-                      <td md-font="secondary"
-                          md-misc="textLeft"
-                          md-pad="0"
-                          md-content="{{$ctrl.item.quantity}}"></td>
-                    </tr>
-                    <tr>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0,16,0,0"
-                          md-content="{{$ctrl.settings.modals.cart.items.sku.amount.label}}"></td>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0"
-                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </md-action>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{($ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]) + '   (' + $ctrl.item.quantity + 'X ' + ($ctrl.item.price | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]) + ')'}}"></md-base>
             </md-base>`,
   bindings: {
     settings: '<',
@@ -1126,22 +1074,9 @@ mdApp.component('mdCartItemShipping', {
                        md-content="{{$ctrl.item.parent}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.delivery_estimate"
                        md-content="{{$ctrl.item.delivery_estimate}}"></md-base>
-              <md-action side="right" md-pad="16,0,0,0">
-                <table>
-                  <tbody>
-                    <tr>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0,16,0,0"
-                          md-content="{{$ctrl.settings.modals.cart.items.shipping.amount.label}}"></td>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0"
-                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </md-action>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></md-base>
             </md-base>`,
   bindings: {
     settings: '<',
@@ -1155,22 +1090,9 @@ mdApp.component('mdCartItemTax', {
                        md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.parent"
                        md-content="{{$ctrl.item.parent}}"></md-base>
-              <md-action side="right" md-pad="16,0,0,0">
-                <table>
-                  <tbody>
-                    <tr>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0,16,0,0"
-                          md-content="{{$ctrl.settings.modals.cart.items.tax.amount.label}}"></td>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0"
-                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </md-action>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></md-base>
             </md-base>`,
   bindings: {
     settings: '<',
@@ -1184,22 +1106,9 @@ mdApp.component('mdCartItemDiscount', {
                        md-content="{{$ctrl.item.description}}"></md-base>
               <md-base md-font="secondary" ng-if="$ctrl.item.parent"
                        md-content="{{$ctrl.item.parent}}"></md-base>
-              <md-action side="right" md-pad="16,0,0,0">
-                <table>
-                  <tbody>
-                    <tr>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0,16,0,0"
-                          md-content="{{$ctrl.settings.modals.cart.items.discount.amount.label}}"></td>
-                      <td md-font="secondary"
-                          md-misc="textRight"
-                          md-pad="0"
-                          md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </md-action>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></md-base>
             </md-base>`,
   bindings: {
     settings: '<',
@@ -1527,9 +1436,6 @@ mdApp.component('mdCartPay', {
 mdApp.component('mdCartEnd', {
   template: `<md-cart-page page="6" current-page="$ctrl.step">
               <md-cards>
-                <md-cart-status settings="$ctrl.settings"
-                                cart="$ctrl.cart">
-                </md-cart-status>
                 <md-cart-shipping-address settings="$ctrl.settings"
                                           cart="$ctrl.cart">
                 </md-cart-shipping-address>
@@ -2188,6 +2094,7 @@ mdApp.component('mdHome', {
         'parent': sku.id,
         'quantity': quantity,
         'amount': (sku.price * quantity),
+        'price': sku.price,
         'currency': sku.currency,
         'description': product.name,
         'product': product.id
