@@ -548,31 +548,6 @@ mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle
   };
 }]);
 
-mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdError', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.elementOriginalColor) {
-            attrs.$set('elementOriginalColor', element.css('color'));
-          }
-          var elementOriginalBorderBottomColor = element.css('border-bottom-color');
-          if (elementOriginalBorderBottomColor) {
-            attrs.$set('elementOriginalBorderBottomColor', elementOriginalBorderBottomColor);
-            element.css({'border-bottom-color': 'rgba(255, 0, 0, 0.87)'});
-          }
-          element.css({'color': 'rgba(255, 0, 0, 0.87)'});
-        } else {
-          if (attrs.elementOriginalBorderBottomColor) {
-            element.css({'border-bottom-color': attrs.elementOriginalBorderBottomColor});
-          }
-          element.css({'color': attrs.elementOriginalColor});
-        }
-      });
-    }
-  };
-}]);
-
 mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
@@ -585,16 +560,19 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
       };
       element.css(mdStyle.font('label', mdStyle.general(s)));
       var error = false;
+      var disabled = false;
       var focus = false;
       var update = function() {
         var s = {};
         if (focus) {
           if (error) {
             s['color'] = 'rgba(255, 0, 0, 0.87)';
+          } else if (disabled) {
+            s['color'] = 'rgba(0, 0, 0, 0.38)';
           } else {
             s['color'] = 'rgba(0, 0, 0, 0.54)';
           }
-          attrs.$set('elementOriginalColor', 'rgba(0, 0, 0, 0.54)');
+          attrs.$set('originalColor', 'rgba(0, 0, 0, 0.54)');
           //s['line-height'] = '14px';
           //s['font-size'] = '12px';
           //s['letter-spacing'] = '0.2px';
@@ -606,10 +584,12 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
         } else {
           if (error) {
             s['color'] = 'rgba(255, 0, 0, 0.87)';
+          } else if (disabled) {
+            s['color'] = 'rgba(0, 0, 0, 0.38)';
           } else {
             s['color'] = 'rgba(0, 0, 0, 0.38)';
           }
-          attrs.$set('elementOriginalColor', 'rgba(0, 0, 0, 0.38)');
+          attrs.$set('originalColor', 'rgba(0, 0, 0, 0.38)');
           //s['line-height'] = '20px';
           //s['font-size'] = '16px';
           //s['letter-spacing'] = '0.1px';
@@ -624,6 +604,10 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
       update();
       attrs.$observe('mdError', function(value) {
         error = scope.$eval(value);
+        update();
+      });
+      attrs.$observe('mdDisabled', function(value) {
+        disabled = scope.$eval(value);
         update();
       });
       attrs.$observe('focus', function(value) {
@@ -657,6 +641,16 @@ mdUXUI.directive('mdInputText', ['mdStyle', function(mdStyle) {
         'min-height': '36px',
       };
       element.css(mdStyle.font('input', mdStyle.general(s)));
+      attrs.$observe('mdDisabled', function(value) {
+        var s = {};
+        if (scope.$eval(value)) {
+          s['color'] = 'rgba(0, 0, 0, 0.38)';
+        } else {
+          s['color'] = 'rgba(0, 0, 0, 0.87)';
+        }
+        attrs.$set('originalColor', 'rgba(0, 0, 0, 0.87)');
+        element.css(s);
+      });
     }
   };
 }]);
@@ -786,12 +780,6 @@ mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
       };
       element.css(mdStyle.font('button', mdStyle.general(s)));
       mdStyle.ripple(element, 'tracking-dark');
-      element.on('mousedown', function(event) {
-        element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
-      });
-      element.on('mouseup', function(event) {
-        element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
-      });
     }
   };
 }]);
@@ -1289,12 +1277,6 @@ mdUXUI.directive('mdCardsCellTile', ['mdStyle', function(mdStyle) {
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
       };
       element.css(mdStyle.general(s));
-      element.on('mousedown', function(event) {
-        element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
-      });
-      element.on('mouseup', function(event) {
-        element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
-      });
     }
   };
 }]);
@@ -1370,12 +1352,6 @@ mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
       };
       element.css(mdStyle.general(s));
-      element.on('mousedown', function(event) {
-        element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
-      });
-      element.on('mouseup', function(event) {
-        element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
-      });
     }
   };
 }]);
@@ -1587,18 +1563,35 @@ mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
   };
 }]);
 
+mdUXUI.directive('mdRaised', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      element.on('mousedown', function(event) {
+        if (scope.$eval(attrs.mdRaised)) {
+          element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
+        }
+      });
+      element.on('mouseup', function(event) {
+        if (scope.$eval(attrs.mdRaised)) {
+          element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
+        }
+      });
+    }
+  };
+}]);
+
 mdUXUI.directive('mdActive', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       attrs.$observe('mdActive', function(value) {
         if (scope.$eval(value)) {
-          if (!attrs.elementOriginalBackground) {
-            attrs.$set('elementOriginalBackground', element.css('background'));
+          if (!attrs.originalBackground) {
+            attrs.$set('originalBackground', element.css('background'));
           }
           element.css({'background': 'rgba(0, 0, 0, 0.08)'});
         } else {
-          if (attrs.elementOriginalBackground) {
-            element.css({'background': attrs.elementOriginalBackground});
+          if (attrs.originalBackground) {
+            element.css({'background': attrs.originalBackground});
           }
         }
       });
@@ -1611,19 +1604,46 @@ mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
     link: function(scope, element, attrs) {
       attrs.$observe('mdDisabled', function(value) {
         if (scope.$eval(value)) {
-          if (!attrs.elementOriginalColor) {
-            attrs.$set('elementOriginalColor', element.css('color'));
+          if (!attrs.originalColor) {
+            attrs.$set('originalColor', element.css('color'));
           }
-          if (!attrs.elementOriginalCursor) {
-            attrs.$set('elementOriginalCursor', element.css('cursor'));
+          if (!attrs.originalCursor) {
+            attrs.$set('originalCursor', element.css('cursor'));
           }
           element.css({'color': 'rgba(0, 0, 0, 0.38)', 'cursor': 'not-allowed'});
         } else {
-          if (attrs.elementOriginalColor) {
-            element.css({'color': attrs.elementOriginalColor});
+          if (attrs.originalColor) {
+            element.css({'color': attrs.originalColor});
           }
-          if (attrs.elementOriginalCursor) {
-            element.css({'cursor': attrs.elementOriginalCursor});
+          if (attrs.originalCursor) {
+            element.css({'cursor': attrs.originalCursor});
+          }
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      attrs.$observe('mdError', function(value) {
+        if (scope.$eval(value)) {
+          if (!attrs.originalColor) {
+            attrs.$set('originalColor', element.css('color'));
+          }
+          var originalBorderBottomColor = element.css('border-bottom-color');
+          if (originalBorderBottomColor) {
+            attrs.$set('originalBorderBottomColor', originalBorderBottomColor);
+            element.css({'border-bottom-color': 'rgba(255, 0, 0, 0.87)'});
+          }
+          element.css({'color': 'rgba(255, 0, 0, 0.87)'});
+        } else {
+          if (attrs.originalColor) {
+            element.css({'color': attrs.originalColor});
+          }
+          if (attrs.originalBorderBottomColor) {
+            element.css({'border-bottom-color': attrs.originalBorderBottomColor});
           }
         }
       });

@@ -72,7 +72,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     };
     $http.get('account', {'cache': true}).then(function(response) {
       var account = response.data;
-      angular.merge(cart, newCart);
+      angular.merge(cart, testCart);
       cart.currency = account.default_currency;
       return cart;
     });
@@ -465,7 +465,7 @@ mdApp.component('mdAppIcon', {
               </md-action>
             </md-base>`,
   bindings: {
-    icon: '<',
+    icon: '<'
   }
 });
 
@@ -482,6 +482,8 @@ mdApp.component('mdListItemMultiline', {
 mdApp.component('mdListItemMultilineClickable', {
   template: `<button md-button-composite
                      ng-click="$ctrl.onClick({value: $ctrl.value})"
+                     ng-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
                      theme="tracking-dark">
               <md-list-item-multiline>
                 <md-base ng-transclude></md-base>
@@ -489,6 +491,7 @@ mdApp.component('mdListItemMultilineClickable', {
             </button>`,
   transclude: true,
   bindings: {
+    disabled: '<',
     onClick: '&',
     value: '<'
   }
@@ -496,22 +499,28 @@ mdApp.component('mdListItemMultilineClickable', {
 
 mdApp.component('mdCardsItemMultiline', {
   template: `<md-cards-cell>
-              <md-cards-cell-tile ng-transclude>
+              <md-cards-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
               </md-cards-cell-tile>
             </md-cards-cell>`,
-  transclude: true
+  transclude: true,
+  bindings: {
+    disabled: '<'
+  }
 });
 
 mdApp.component('mdCardsItemMultilineClickable', {
-  template: `<md-cards-item-multiline>
+  template: `<md-cards-item-multiline disabled="$ctrl.disabled">
               <button md-button-composite
                       ng-click="$ctrl.onClick({value: $ctrl.value})"
+                      ng-disabled="$ctrl.disabled"
+                      md-disabled="{{$ctrl.disabled}}"
                       theme="tracking-dark"
                       ng-transclude>
               </button>
             </md-cards-item-multiline>`,
   transclude: true,
   bindings: {
+    disabled: '<',
     onClick: '&',
     value: '<'
   }
@@ -519,39 +528,43 @@ mdApp.component('mdCardsItemMultilineClickable', {
 
 mdApp.component('mdWallItemMultiline', {
   template: `<md-wall-cell md-width="{{$ctrl.mdWidth}}">
-              <md-wall-cell-tile ng-transclude>
+              <md-wall-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
               </md-wall-cell-tile>
             </md-wall-cell>`,
   transclude: true,
   bindings: {
-    mdWidth: '<'
+    mdWidth: '<',
+    disabled: '<'
   }
 });
 
 mdApp.component('mdWallItemMultilineClickable', {
-  template: `<md-wall-item-multiline md-width="$ctrl.mdWidth">
+  template: `<md-wall-item-multiline md-width="$ctrl.mdWidth" disabled="$ctrl.disabled">
               <button md-button-composite
                       ng-click="$ctrl.onClick({value: $ctrl.value})"
+                      ng-disabled="$ctrl.disabled"
+                      md-disabled="{{$ctrl.disabled}}"
                       theme="tracking-dark"
                       ng-transclude>
               </button>
             </md-wall-item-multiline>`,
   transclude: true,
   bindings: {
+    mdWidth: '<',
+    disabled: '<',
     onClick: '&',
-    value: '<',
-    mdWidth: '<'
+    value: '<'
   }
 });
 
 mdApp.component('mdListItem', {
   template: `<md-list-cell>
               <md-list-cell-tile lines="{{$ctrl.lines}}" side="{{$ctrl.iconPosition}}" dialog="{{$ctrl.dialog}}">
-                <md-primary md-content="{{$ctrl.first}}" md-disabled="$ctrl.disabled"></md-primary>
-                <md-secondary md-content="{{$ctrl.second}}" md-disabled="$ctrl.disabled" ng-if="$ctrl.second"></md-secondary>
-                <md-secondary md-content="{{$ctrl.third}}" md-disabled="$ctrl.disabled" ng-if="$ctrl.third"></md-secondary>
+                <md-primary md-content="{{$ctrl.first}}" md-disabled="{{$ctrl.disabled}}"></md-primary>
+                <md-secondary md-content="{{$ctrl.second}}" md-disabled="{{$ctrl.disabled}}" ng-if="$ctrl.second"></md-secondary>
+                <md-secondary md-content="{{$ctrl.third}}" md-disabled="{{$ctrl.disabled}}" ng-if="$ctrl.third"></md-secondary>
                 <md-actions side="{{$ctrl.iconPosition}}" lines="{{$ctrl.lines}}" dialog="{{$ctrl.dialog}}" ng-if="$ctrl.icon">
-                  <md-base md-icon md-content="{{$ctrl.icon}}" md-disabled="$ctrl.disabled" md-pad="12"></md-base>
+                  <md-base md-icon md-content="{{$ctrl.icon}}" md-disabled="{{$ctrl.disabled}}" md-pad="12"></md-base>
                 </md-actions>
               </md-list-cell-tile>
             </md-list-cell>`,
@@ -585,7 +598,7 @@ mdApp.component('mdListItemClickable', {
   template: `<button md-button-composite
                      ng-click="$ctrl.onClick({value: $ctrl.value})"
                      ng-disabled="$ctrl.disabled"
-                     md-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
                      md-active="{{($ctrl.value === $ctrl.sample)}}"
                      theme="tracking-dark">
               <md-list-item first="$ctrl.first"
@@ -617,6 +630,7 @@ mdApp.component('mdTextInput', {
               <md-list-cell-tile>
                 <md-input-label focus="{{$ctrl.focused}}"
                                 md-content="{{$ctrl.label}}"
+                                md-disabled="{{$ctrl.disabled}}"
                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
                 </md-input-label>
                 <input name="{{$ctrl.name}}"
@@ -628,7 +642,7 @@ mdApp.component('mdTextInput', {
                        ng-model="$ctrl.value"
                        ng-model-options="{allowInvalid: false}"
                        ng-disabled="$ctrl.disabled"
-                       md-disabled="$ctrl.disabled"
+                       md-disabled="{{$ctrl.disabled}}"
                        ng-required="$ctrl.required"
                        ng-trim="$ctrl.trim"
                        ng-minlength="$ctrl.minlength"
@@ -636,6 +650,7 @@ mdApp.component('mdTextInput', {
                        ng-pattern="$ctrl.pattern"
                        ng-change="$ctrl.onChange({name: $ctrl.name, value: $ctrl.value})">
                 <md-input-helper md-content="{{$ctrl.instruction}}"
+                                 md-disabled="{{$ctrl.disabled}}"
                                  md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
                 </md-input-helper>
               </md-list-cell-tile>
@@ -686,7 +701,8 @@ mdApp.component('mdTextInput', {
     minlength: '<',
     maxlength: '<',
     pattern: '<',
-    instructions: '<'
+    instructions: '<',
+    disabled: '<'
   }
 });
 
@@ -695,6 +711,7 @@ mdApp.component('mdSelectionInput', {
               <md-list-cell-tile>
                 <md-input-label focus="{{$ctrl.focused}}"
                                 md-content="{{$ctrl.label}}"
+                                md-disabled="{{$ctrl.disabled}}"
                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
                 </md-input-label>
                 <button md-button-composite
@@ -708,7 +725,7 @@ mdApp.component('mdSelectionInput', {
                               ng-model="$ctrl.value"
                               ng-model-options="{allowInvalid: false}"
                               ng-disabled="$ctrl.disabled"
-                              md-disabled="$ctrl.disabled"
+                              md-disabled="{{$ctrl.disabled}}"
                               ng-required="$ctrl.required"
                               ng-trim="$ctrl.trim"
                               ng-minlength="$ctrl.minlength"
@@ -721,6 +738,7 @@ mdApp.component('mdSelectionInput', {
                               md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-input-selection-icon>
                 </button>
                 <md-input-helper md-content="{{$ctrl.instruction}}"
+                                 md-disabled="{{$ctrl.disabled}}"
                                  md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
                 </md-input-helper>
               </md-list-cell-tile>
@@ -773,13 +791,16 @@ mdApp.component('mdSelectionInput', {
     minlength: '<',
     maxlength: '<',
     pattern: '<',
-    instructions: '<'
+    instructions: '<',
+    disabled: '<'
   }
 });
 
 mdApp.component('mdRadioInput', {
   template: `<button md-button-composite
                      ng-click="$ctrl.onSelect({name: $ctrl.name, value: $ctrl.sample})"
+                     ng-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
                      name="{{$ctrl.name}}"
                      ng-model="$ctrl.value"
                      ng-required="$ctrl.required"
@@ -787,19 +808,24 @@ mdApp.component('mdRadioInput', {
               <md-list-cell>
                 <md-list-cell-tile lines="{{$ctrl.lines}}" side="left">
                   <md-primary md-content="{{$ctrl.first}}"
+                              md-disabled="{{$ctrl.disabled}}"
                               md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-primary>
                   <md-secondary md-content="{{$ctrl.second}}" ng-if="$ctrl.second"
+                                md-disabled="{{$ctrl.disabled}}"
                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-secondary>
                   <md-secondary md-content="{{$ctrl.third}}" ng-if="$ctrl.third"
+                                md-disabled="{{$ctrl.disabled}}"
                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-secondary>
                   <md-actions side="left" lines="{{$ctrl.lines}}" dialog="{{$ctrl.dialog}}">
                     <md-base md-icon md-pad="12"
                              md-fade="{{($ctrl.value !== $ctrl.sample)}}"
+                             md-disabled="{{$ctrl.disabled}}"
                              md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">radio_button_checked</md-base>
                   </md-actions>
                   <md-actions side="left" lines="{{$ctrl.lines}}" dialog="{{$ctrl.dialog}}">
                     <md-base md-icon md-pad="12"
                              md-fade="{{($ctrl.value === $ctrl.sample)}}"
+                             md-disabled="{{$ctrl.disabled}}"
                              md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">radio_button_unchecked</md-base>
                   </md-actions>
                 </md-list-cell-tile>
@@ -831,7 +857,8 @@ mdApp.component('mdRadioInput', {
     third: '<',
     value: '<',
     sample: '<',
-    required: '<'
+    required: '<',
+    disabled: '<'
   }
 });
 
@@ -974,7 +1001,7 @@ mdApp.component('mdCartCountries', {
   template: `<md-simple on-close="$ctrl.onSelect({value: $ctrl.option})" active="!$ctrl.option">
               <md-page vertical-scroll="scroll">
                 <md-list>
-                  <md-list-item-clickable ng-repeat="option in $ctrl.settings.countries"
+                  <md-list-item-clickable ng-repeat="option in $ctrl.countries.data"
                                           first="option.name"
                                           value="option.code"
                                           sample="$ctrl.sample"
@@ -982,11 +1009,35 @@ mdApp.component('mdCartCountries', {
                                           dialog="true"
                                           on-click="$ctrl.selectOption(value)">
                   </md-list-item-clickable>
+                  <md-list-item-multiline-clickable ng-if="$ctrl.countries.has_more" on-click="$ctrl.loadMoreCountries()">
+                    <md-base md-pad="4"
+                             md-icon="avatar"
+                             md-content="refresh"></md-base>
+                  </md-list-item-multiline-clickable>
                 </md-list>
               </md-page>
             </md-simple>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
+    
+    var getCountries = function() {
+      var remaining = ctrl.settings.countries.length - ctrl.countries.data.length;
+      var end;
+      if (remaining > 50) {
+        end = ctrl.countries.data.length + 50;
+        ctrl.countries.has_more = true;
+      } else {
+        end = ctrl.countries.data.length + remaining;
+        ctrl.countries.has_more = false;
+      }
+      ctrl.countries.data.push.apply(ctrl.countries.data, ctrl.settings.countries.slice(ctrl.countries.data.length, end));
+    };
+    
+    ctrl.loadMoreCountries = function() {
+      if (ctrl.countries.has_more) {
+        getCountries();
+      }
+    };
     
     ctrl.selectOption = function(value) {
       ctrl.option = value;
@@ -994,6 +1045,8 @@ mdApp.component('mdCartCountries', {
     
     ctrl.$onInit = function() {
       ctrl.option = false;
+      ctrl.countries = {'data': [], 'has_more': false};
+      getCountries();
     };
   }],
   bindings: {
@@ -1004,7 +1057,7 @@ mdApp.component('mdCartCountries', {
 });
 
 mdApp.component('mdCartSummary', {
-  template: `<md-cards-item-multiline>
+  template: `<md-cards-item-multiline disabled="true">
               <md-base md-pad="24,16">
                 <md-base md-font="headline"
                          md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></md-base>
@@ -1019,7 +1072,7 @@ mdApp.component('mdCartSummary', {
 });
 
 mdApp.component('mdCartShippingAddress', {
-  template: `<md-cards-item-multiline>
+  template: `<md-cards-item-multiline disabled="true">
               <md-base md-pad="24,16">
                 <md-base md-font="headline"
                          md-content="{{$ctrl.cart.shipping.name}}"></md-base>
@@ -1108,7 +1161,7 @@ mdApp.component('mdCartItemDiscount', {
 });
 
 mdApp.component('mdCartItemView', {
-  template: `<md-cards-item-multiline>
+  template: `<md-cards-item-multiline disabled="true">
               <md-cart-item-product ng-if="($ctrl.value.type === 'sku')"
                                     settings="$ctrl.settings"
                                     item="$ctrl.value"></md-cart-item-product>
@@ -1391,6 +1444,7 @@ mdApp.component('mdCartPay', {
                   <md-list-item-multiline>
                     <md-action side="center">
                       <button md-button-text-raised
+                              md-raised="true"
                               md-content="{{$ctrl.settings.modals.cart.steps.five + ' ' + ($ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()])}}"
                               ng-click="$ctrl.submit()"></button>
                     </md-action>
@@ -1611,7 +1665,7 @@ mdApp.component('mdSkuQuantity', {
                          ng-model="$ctrl.value"
                          ng-model-options="{allowInvalid: false}"
                          ng-disabled="$ctrl.disabled"
-                         md-disabled="$ctrl.disabled"
+                         md-disabled="{{$ctrl.disabled}}"
                          ng-required="$ctrl.required"
                          ng-trim="$ctrl.trim"
                          ng-min="$ctrl.min"
@@ -1766,7 +1820,7 @@ mdApp.component('mdSkuAttributes', {
             </md-list>`,
   bindings: {
     attributes: '<',
-    onSelect: '&',
+    onSelect: '&'
   }
 });
 
@@ -1786,7 +1840,7 @@ mdApp.component('mdProductInfo', {
     id: '<',
     description: '<',
     price: '<',
-    inventory: '<',
+    inventory: '<'
   }
 });
 
@@ -2023,7 +2077,7 @@ mdApp.component('mdProducts', {
   }],
   bindings: {
     settings: '<',
-    onSelect: '&',
+    onSelect: '&'
   }
 });
 
