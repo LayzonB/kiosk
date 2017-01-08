@@ -900,23 +900,14 @@ mdApp.component('mdCartButton', {
 });
 
 mdApp.component('mdCartPage', {
-  template: `<md-page vertical-scroll="scroll" top="{{$ctrl.top}}" bottom="{{$ctrl.bottom}}" ng-transclude>
+  template: `<md-page vertical-scroll="scroll" top="56px" position="{{$ctrl.position}}" ng-transclude>
             </md-page>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
     ctrl.positionPage = function() {
-      if (ctrl.currentPage === ctrl.page) {
-        ctrl.top = '56px';
-        ctrl.bottom = '0';
-      } else if (ctrl.currentPage > ctrl.page) {
-        ctrl.top = '-100%';
-        ctrl.bottom = '100%';
-      } else if (ctrl.currentPage < ctrl.page) {
-        ctrl.top = '100%';
-        ctrl.bottom = '-100%';
-      }
+      ctrl.position = (ctrl.page - ctrl.currentPage) * 100;
     };
     
     ctrl.$onInit = function() {
@@ -1801,12 +1792,12 @@ mdApp.component('mdProductInfo', {
 
 mdApp.component('mdProductImageSlider', {
   template: `<md-base md-get-height="-124" md-set-height="{{mdGetHeight}}" md-get-width>
-              <md-carousel-action side="left" lines="4">
+              <md-carousel-action side="left">
                 <button md-button-composite theme="tracking-dark" ng-click="$ctrl.rewind()">
                   <md-base md-icon="avatar" md-pad="12" md-content="chevron_left"></md-bsae>
                 </button>
               </md-carousel-action>
-              <md-carousel-action side="right" lines="4">
+              <md-carousel-action side="right">
                 <button md-button-composite theme="tracking-dark" ng-click="$ctrl.forward()">
                   <md-base md-icon="avatar" md-pad="12" md-content="chevron_right"></md-bsae>
                 </button>

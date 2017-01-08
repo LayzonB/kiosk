@@ -9,20 +9,6 @@ var mdUXUI = angular.module('mdUXUI', []);
 
 mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
   
-  var format = function(style) {
-    angular.forEach(style, function(value, key) {
-      if (value instanceof Object) {
-        format(value);
-      } else if ((key === 'transform') || (key === 'transition') || (key === 'text-rendering') || (key === 'font-smoothing') || (key === 'font-feature-settings') || (key === 'tap-highlight-color') || (key === 'appearance')) {
-        style['-webkit-' + key] = value;
-        style['-moz-' + key] = value;
-        style['-o-' + key] = value;
-        style['-ms-' + key] = value;
-      }
-    });
-    return style;
-  };
-  
   var extend = function(base, extension) {
     return angular.merge(base, extension);
   };
@@ -74,6 +60,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       'padding': '0',
       'background': 'rgba(0, 0, 0, 0)',
       'tap-highlight-color': 'rgba(0, 0, 0, 0)',
+      'transition': 'all 0.2s linear 0s',
     };
     return extend(template, style);
   };
@@ -90,7 +77,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       'font-size': '24px',
       'text-rendering': 'optimizeLegibility',
       'font-smoothing': 'antialiased',
-      'transition': 'opacity 0.2s linear 0s, color 0.2s linear 0s',
+      'transition': 'all 0.2s linear 0s',
     };
     return extend(template, style);
   };
@@ -107,7 +94,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       'font-size': '24px',
       'text-rendering': 'optimizeLegibility',
       'font-smoothing': 'antialiased',
-      'transition': 'opacity 0.2s ease-in-out 0s, color 0.2s linear 0s',
+      'transition': 'all 0.2s linear 0s',
     };
     return extend(template, style);
   };
@@ -136,7 +123,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       'text-rendering': 'optimizeLegibility',
       'font-smoothing': 'antialiased',
       'font-feature-settings': 'liga',
-      'transition': 'opacity 0.2s ease-in-out 0s, color 0.2s linear 0s',
+      'transition': 'all 0.2s linear 0s',
     };
     var fonts = {
       'default': {},
@@ -406,7 +393,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       'top': '0',
       'bottom': '0',
       'z-index': '100',
-      'transition': 'top 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s, bottom 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
+      'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
     };
     return extend(template, style);
   };
@@ -433,7 +420,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     return extend(template, style);
   };
   
-  var ripple = function(scope, element, attrs, theme) {
+  var ripple = function(element, theme) {
     var timer_delay;
     var s = {
       'position': 'absolute',
@@ -487,11 +474,11 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       var SI = (scaleInterval / 1000).toString();
       var s = {
         'transition': 'opacity ' + OI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                              -webkit-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                              -moz-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                              -o-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                              -ms-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                              transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s',
+                      -webkit-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
+                      -moz-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
+                      -o-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
+                      -ms-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
+                      transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s',
         'transform': 'scale(1, 1)',
         'opacity': '1',
       };
@@ -512,14 +499,11 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
   };
   
   var calculateContainer = function (containerWidth, minItemWidth) {
-    var itemCount = 1;
+    var itemCount = 2;
     while (true) {
-      var itemWidth = containerWidth / itemCount;
-      if (itemWidth < minItemWidth) {
-        if (itemCount > 1) {
-          itemCount = itemCount - 1;
-        }
-        itemWidth = containerWidth / itemCount;
+      if ((containerWidth / itemCount) < minItemWidth) {
+        itemCount = itemCount - 1;
+        var itemWidth = containerWidth / itemCount;
         var item = {
           'itemCount': itemCount,
           'itemWidth': Math.floor(itemWidth),
@@ -533,7 +517,6 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
   };
   
   return {
-    'format': format,
     'misc': misc,
     'pad': pad,
     'general': general,
@@ -597,20 +580,12 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
         'padding-top': '2px',
         'min-height': '22px',
         'transform-origin': 'left top 0px',
-        'transform': 'translate3d(0, 28px, 0) scale(1)',
-        'transition': 'font-size 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       line-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       letter-spacing 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       padding 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       -webkit-transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       -o-transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       -moz-transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       -ms-transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s, \
-                       transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s',
+        'transform': 'translate(0px, 28px) scale(1)',
+        'transition': 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s',
       };
       element.css(mdStyle.font('label', mdStyle.general(s)));
+      var error = false;
+      var focus = false;
       var update = function() {
         var s = {};
         if (focus) {
@@ -625,9 +600,9 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
           //s['letter-spacing'] = '0.2px';
           //s['color'] = 'rgba(0, 0, 0, 0.54)';
           //s['padding-top'] = '8px';
-          //s['transform'] = 'translate3d(0, 6px, 0) scale(0.75)';
+          //s['transform'] = 'translate(0px, 6px) scale(0.75)';
           //s['color'] = 'rgba(0, 0, 0, 0.54)';
-          s['transform'] = 'translate3d(0, 6px, 0) scale(0.75)';
+          s['transform'] = 'translate(0px, 6px) scale(0.75)';
         } else {
           if (error) {
             s['color'] = 'rgba(255, 0, 0, 0.87)';
@@ -640,14 +615,12 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
           //s['letter-spacing'] = '0.1px';
           //s['color'] = 'rgba(0, 0, 0, 0.38)';
           //s['padding-top'] = '2px';
-          //s['transform'] = 'translate3d(0, 28px, 0) scale(1)';
+          //s['transform'] = 'translate(0px, 28px) scale(1)';
           //s['color'] = 'rgba(0, 0, 0, 0.38)';
-          s['transform'] = 'translate3d(0, 28px, 0) scale(1)';
+          s['transform'] = 'translate(0px, 28px) scale(1)';
         }
         element.css(s);
       };
-      var error = false;
-      var focus = false;
       update();
       attrs.$observe('mdError', function(value) {
         error = scope.$eval(value);
@@ -682,7 +655,6 @@ mdUXUI.directive('mdInputText', ['mdStyle', function(mdStyle) {
         'border-bottom': '1px solid rgba(0, 0, 0, 0.12)',
         'width': '100%',
         'min-height': '36px',
-        'transition': 'border 0.2s linear 0s, color 0.2s linear 0s',
       };
       element.css(mdStyle.font('input', mdStyle.general(s)));
     }
@@ -698,7 +670,6 @@ mdUXUI.directive('mdInputNumber', ['mdStyle', function(mdStyle) {
         'border': 'none',
         'min-height': '36px',
         'appearance': 'none',
-        'transition': 'border 0.2s linear 0s, color 0.2s linear 0s',
         'width': '100%',
       };
       //'width': '96px',
@@ -716,7 +687,6 @@ mdUXUI.directive('mdInputSelection', ['mdStyle', function(mdStyle) {
         'border-bottom': '1px solid rgba(0, 0, 0, 0.12)',
         'width': '100%',
         'min-height': '36px',
-        'transition': 'border 0.2s linear 0s, color 0.2s linear 0s',
       };
       element.css(mdStyle.font('input', mdStyle.general(s)));
     }
@@ -745,14 +715,13 @@ mdUXUI.directive('mdButtonIconRaised', ['mdStyle', function(mdStyle) {
         'width': '48px',
         'height': '48px',
         'padding': '12px',
-        'transition': 'text-shadow 0.2s linear 0s, color 0.2s linear 0s',
         'overflow': 'hidden',
         'color': 'rgba(255, 255, 255, 1)',
         'text-shadow': '1px 2px 2px rgba(0, 0, 0, 0.54)',
         'cursor': 'pointer',
       };
       element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
-      mdStyle.ripple(scope, element, attrs, 'icon-dark');
+      mdStyle.ripple(element, 'icon-dark');
       element.on('mousedown', function(event) {
         element.css({'text-shadow': '2px 4px 4px rgba(0, 0, 0, 0.54)'});
       });
@@ -775,7 +744,7 @@ mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
         'cursor': 'pointer',
       };
       element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
-      mdStyle.ripple(scope, element, attrs, 'icon-dark');
+      mdStyle.ripple(element, 'icon-dark');
     }
   };
 }]);
@@ -795,7 +764,7 @@ mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
         'cursor': 'pointer',
       };
       element.css(mdStyle.font('button', mdStyle.general(s)));
-      mdStyle.ripple(scope, element, attrs, 'tracking-dark');
+      mdStyle.ripple(element, 'tracking-dark');
     }
   };
 }]);
@@ -814,10 +783,9 @@ mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
         'color': 'rgba(0, 0, 0, 0.87)',
         'cursor': 'pointer',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-        'transition': 'box-shadow 0.2s linear 0s',
       };
       element.css(mdStyle.font('button', mdStyle.general(s)));
-      mdStyle.ripple(scope, element, attrs, 'tracking-dark');
+      mdStyle.ripple(element, 'tracking-dark');
       element.on('mousedown', function(event) {
         element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
       });
@@ -836,98 +804,16 @@ mdUXUI.directive('mdButtonComposite', ['mdStyle', function(mdStyle) {
         'width': '100%',
         'cursor': 'pointer',
       };
-      var theme;
       element.css(mdStyle.general(s));
-      attrs.$observe('theme', function(value) {
-        mdStyle.ripple(scope, element, attrs, value);
-      });
+      mdStyle.ripple(element, attrs.theme);
     }
   };
 }]);
 
-mdUXUI.directive('mdRipple', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
+mdUXUI.directive('mdRipple', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var timer_delay;
-      var s = {
-        'position': 'absolute',
-        'background': 'rgba(0, 0, 0, 0.08)',
-        'border-radius': '50%',
-        'top': '0px',
-        'left': '0px',
-        'height': '48px',
-        'width': '48px',
-        'transform': 'scale(0, 0)',
-        'opacity': '0',
-      };
-      var surface = angular.element('<div></div>');
-      surface.css(mdStyle.general(s));
-      element.append(surface);
-      var type = 'icon-dark';
-      attrs.$observe('mdRipple', function(value) {
-        if (value) {
-          type = value;
-        }
-        if (type === 'tracking-dark') {
-          surface.css({'background': 'rgba(0, 0, 0, 0.16)'});
-        } else if ((type === 'tracking-light') || (type === 'icon-light')) {
-          surface.css({'background': 'rgba(255, 255, 255, 0.20)'});
-        }
-      });
-      var resetAnimation = function() {
-        var s = {
-          'transition': 'all 0s ease 0s',
-          'transform': 'scale(0, 0)',
-          'opacity': '0',
-        };
-        surface.css(s);
-      };
-      var position = function(event) {
-        var parent_width = element[0].clientWidth;
-        var parent_height = element[0].clientHeight;
-        var element_position = element[0].getBoundingClientRect();
-        var parent_diagonal = 2 * (Math.round(Math.sqrt((parent_width * parent_width) + (parent_height * parent_height))));
-        if (parent_diagonal > 2000) {
-          parent_diagonal = 2000;
-        }
-        var margin = -(parent_diagonal/2);
-        var s = {
-          'top': (event.clientY - element_position.top).toString(),
-          'left': (event.clientX - element_position.left).toString(),
-          'height': parent_diagonal.toString(),
-          'width': parent_diagonal.toString(),
-          'margin-top': margin.toString(),
-          'margin-left': margin.toString(),
-        };
-        surface.css(s);
-      };
-      var animate = function(opacityInterval, scaleInterval) {
-        var OI = (opacityInterval / 1000).toString();
-        var SI = (scaleInterval / 1000).toString();
-        var s = {
-          'transition': 'opacity ' + OI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                                -webkit-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                                -moz-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                                -o-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                                -ms-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                                transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s',
-          'transform': 'scale(1, 1)',
-          'opacity': '1',
-        };
-        surface.css(s);
-        $timeout(function() {surface.css({'opacity': '0'});}, opacityInterval);
-        timer_delay = $timeout(function() {resetAnimation();}, scaleInterval);
-      };
-      element.on('mousedown', function(event) {
-        $timeout.cancel(timer_delay);
-        resetAnimation();
-        if ((type === 'tracking-dark') || (type === 'tracking-light')) {
-          position(event);
-          animate(300, 600);
-        } else {
-          animate(200, 400);
-        }
-      });
+      mdStyle.ripple(element, attrs.mdRipple);
     }
   };
 }]);
@@ -991,21 +877,21 @@ mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
     link: function(scope, element, attrs) {
       element.css(mdStyle.modal('screen', {}));
       var active = false;
-      var toggle = function(active) {
+      var toggle = function() {
         var s = {};
         if (active) {
-          s['transition'] = 'opacity 0.2s linear 0s';
+          s['transition'] = 'all 0.2s linear 0s';
           s['opacity'] = '1';
         } else {
-          s['transition'] = 'opacity 0.2s linear 0.1s';
+          s['transition'] = 'all 0.2s linear 0.1s';
           s['opacity'] = '0';
         }
         element.css(s);
       };
-      toggle(active);
+      toggle();
       attrs.$observe('active', function(value) {
         active = scope.$eval(value);
-        toggle(active);
+        toggle();
       });
     }
   };
@@ -1014,29 +900,31 @@ mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdModalSlide', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var side;
+      var side = attrs.mdModalSlide;
       var active = false;
-      var toggle = function(active, side) {
+      var toggle = function() {
         var s = {};
         if (active) {
-          s['transition'] = side + ' 0.3s cubic-bezier(0, 0, 0.4, 1) 0s';
-          s[side] = '0';
+          s['transition'] = 'all 0.3s cubic-bezier(0, 0, 0.4, 1) 0s';
+          s['transform'] = 'translate(0%, 0%)';
         } else {
-          s['transition'] = side + ' 0.3s cubic-bezier(0.8, 0, 1, 1) 0s';
-          s[side] = '-110%';
+          s['transition'] = 'all 0.3s cubic-bezier(0.8, 0, 1, 1) 0s';
+          if (side === 'right') {
+            s['transform'] = 'translate(110%, 0%)';
+          } else if (side === 'left') {
+            s['transform'] = 'translate(-110%, 0%)';
+          } else if (side === 'top') {
+            s['transform'] = 'translate(0%, -110%)';
+          } else if (side === 'bottom') {
+            s['transform'] = 'translate(0%, 110%)';
+          }
         }
         element.css(s);
       };
-      toggle(active, side);
-      attrs.$observe('mdModalSlide', function(value) {
-        if (value) {
-          side = value;
-          toggle(active, side);
-        }
-      });
+      toggle();
       attrs.$observe('active', function(value) {
         active = scope.$eval(value);
-        toggle(active, side);
+        toggle();
       });
     }
   };
@@ -1046,21 +934,20 @@ mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var active = false;
-      var toggle = function(active) {
+      var toggle = function() {
         var s = {};
+        s['transition'] = 'all 0.3s linear 0s';
         if (active) {
-          s['transition'] = 'opacity 0.3s linear 0s, width 0.3s linear 0s, height 0.3s linear 0s';
           s['opacity'] = '1';
         } else {
-          s['transition'] = 'opacity 0.3s linear 0s, width 0.3s linear 0s, height 0.3s linear 0s';
           s['opacity'] = '0';
         }
         element.css(s);
       };
-      toggle(active);
+      toggle();
       attrs.$observe('active', function(value) {
         active = scope.$eval(value);
-        toggle(active);
+        toggle();
       });
     }
   };
@@ -1069,7 +956,6 @@ mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdFullScreenSheet', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var side = 'top';
       var s = {
         'width': '100%',
         'min-width': '224px',
@@ -1147,18 +1033,22 @@ mdUXUI.directive('mdConfirmationSheet', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdPage', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      element.css(mdStyle.page({}));
-      attrs.$observe('top', function(value) {
-        element.css({'top': value});
-      });
-      attrs.$observe('bottom', function(value) {
-        element.css({'bottom': value});
-      });
-      attrs.$observe('verticalScroll', function(value) {
-        element.css({'overflow-y': value});
-      });
-      attrs.$observe('horizontalScroll', function(value) {
-        element.css({'overflow-x': value});
+      var s = {};
+      if (attrs.top) {
+        s['top'] = attrs.top;
+      }
+      if (attrs.bottom) {
+        s['bottom'] = attrs.bottom;
+      }
+      if (attrs.verticalScroll) {
+        s['overflow-y'] = attrs.verticalScroll;
+      }
+      if (attrs.horizontalScroll) {
+        s['overflow-x'] = attrs.horizontalScroll;
+      }
+      element.css(mdStyle.page(s));
+      attrs.$observe('position', function(value) {
+        element.css({'transform': 'translate(0%, ' + value.toString() + '%)'});
       });
     }
   };
@@ -1167,7 +1057,7 @@ mdUXUI.directive('mdPage', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdAppBar', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var appbar = {
+      var s = {
         'position': 'absolute',
         'overflow': 'hidden',
         'background': 'rgba(255, 255, 255, 1)',
@@ -1176,11 +1066,11 @@ mdUXUI.directive('mdAppBar', ['mdStyle', function(mdStyle) {
         'min-height': '56px',
         'z-index': '300',
         'box-shadow': '0 2px 4px 1px rgba(0, 0, 0, 0.26)',
-        'transition': 'top 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s, bottom 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
+        'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
       };
-      element.css(mdStyle.general(appbar));
+      element.css(mdStyle.general(s));
       attrs.$observe('top', function(value) {
-        element.css({'top': value});
+        element.css({'transform': 'translate(0px, ' + value.toString() + 'px)'});
       });
     }
   };
@@ -1196,41 +1086,19 @@ mdUXUI.directive('mdActions', ['mdStyle', function(mdStyle) {
         'justify-content': 'flex-start',
         'flex-direction': 'row',
       };
-      var lines, side, dialog;
+      if (attrs.lines > '3') {
+        s['top'] = '4px';
+      } else if (attrs.lines === '2') {
+        s['top'] = '12px';
+      } else {
+        s['top'] = '0';
+      }
+      if (attrs.side === 'left') {
+        s['left'] = attrs.dialog ? '12px' : '4px';
+      } else if (attrs.side === 'right') {
+        s['right'] = attrs.dialog ? '12px' : '4px';
+      }
       element.css(mdStyle.collections(s));
-      var setPosition = function(lines, side, dialog) {
-        var s = {};
-        if (lines > '3') {
-          s['top'] = '4px';
-        } else if (lines === '2') {
-          s['top'] = '12px';
-        } else {
-          s['top'] = '0';
-        }
-        if (side === 'left') {
-          s['left'] = dialog ? '12px' : '4px';
-        } else if (side === 'right') {
-          s['right'] = dialog ? '12px' : '4px';
-        }
-        element.css(s);
-      };
-      setPosition(lines, side, dialog);
-      attrs.$observe('lines', function(value) {
-        if (value) {
-          lines = value;
-          setPosition(lines, side, dialog);
-        }
-      });
-      attrs.$observe('side', function(value) {
-        if (value) {
-          side = value;
-          setPosition(lines, side, dialog);
-        }
-      });
-      attrs.$observe('dialog', function(value) {
-        dialog = scope.$eval(value);
-        setPosition(lines, side, dialog);
-      });
     }
   };
 }]);
@@ -1240,18 +1108,17 @@ mdUXUI.directive('mdAction', ['mdStyle', function(mdStyle) {
     link: function(scope, element, attrs) {
       var s = {
         'flex-direction': 'row',
-        'justify-content': 'space-between',
       };
+      if (attrs.side === 'center') {
+        s['justify-content'] = 'center';
+      } else if (attrs.side === 'left') {
+        s['justify-content'] = 'flex-start';
+      } else if (attrs.side === 'right') {
+        s['justify-content'] = 'flex-end';
+      } else {
+        s['justify-content'] = 'space-between';
+      }
       element.css(mdStyle.collections(s));
-      attrs.$observe('side', function(value) {
-        if (value === 'center') {
-          element.css({'justify-content': 'center'});
-        } else if (value === 'left') {
-          element.css({'justify-content': 'flex-start'});
-        } else if (value === 'right') {
-          element.css({'justify-content': 'flex-end'});
-        }
-      });
     }
   };
 }]);
@@ -1270,12 +1137,6 @@ mdUXUI.directive('mdGrid', ['$window', 'mdStyle', function($window, mdStyle) {
         var width = (parseInt(element.width()) - 2);
         scope.mdGrid = mdStyle.calculateContainer(width, minItemWidth);
       };
-      attrs.$observe('minItemWidth', function(value) {
-        if (value) {
-          minItemWidth = parseInt(value);
-          calculateContainer();
-        }
-      });
       calculateContainer();
       angular.element($window).on('resize', function() {
         calculateContainer();
@@ -1328,48 +1189,31 @@ mdUXUI.directive('mdListCell', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdListCellTile', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var lines = '';
-      var side = '';
-      var dialog = false;
-      element.css(mdStyle.general({}));
-      var setPadding = function() {
-        var top = '0', bottom = '0', left = '0', right = '0';
-        if (lines > '3') {
-          top = '24px';
-          bottom = '24px';
-        } else if (lines === '2') {
-          top = '14px';
-          bottom = '14px';
-        } else if ((lines === '1') || (lines === '3')) {
-          top = '12px';
-          bottom = '12px';
-        }
-        left = dialog ? '24px' : '16px';
-        right = dialog ? '24px' : '16px';
-        if (side === 'left') {
-          left = dialog ? '80px' : '72px';
-        } else if (side === 'right') {
-          right = dialog ? '72px' : '56px';
-        }
-        element.css({'padding-top': top, 'padding-bottom': bottom, 'padding-left': left, 'padding-right': right});
+      var top = '0', bottom = '0', left = '0', right = '0';
+      if (attrs.lines > '3') {
+        top = '24px';
+        bottom = '24px';
+      } else if (attrs.lines === '2') {
+        top = '14px';
+        bottom = '14px';
+      } else if ((attrs.lines === '1') || (attrs.lines === '3')) {
+        top = '12px';
+        bottom = '12px';
+      }
+      left = attrs.dialog ? '24px' : '16px';
+      right = attrs.dialog ? '24px' : '16px';
+      if (attrs.side === 'left') {
+        left = attrs.dialog ? '80px' : '72px';
+      } else if (attrs.side === 'right') {
+        right = attrs.dialog ? '72px' : '56px';
+      }
+      var s = {
+        'padding-top': top,
+        'padding-bottom': bottom,
+        'padding-left': left,
+        'padding-right': right
       };
-      setPadding();
-      attrs.$observe('lines', function(value) {
-        if (value) {
-          lines = value;
-          setPadding();
-        }
-      });
-      attrs.$observe('side', function(value) {
-        if (value) {
-          side = value;
-          setPadding();
-        }
-      });
-      attrs.$observe('dialog', function(value) {
-        dialog = scope.$eval(value);
-        setPadding();
-      });
+      element.css(mdStyle.general(s));
     }
   };
 }]);
@@ -1443,7 +1287,6 @@ mdUXUI.directive('mdCardsCellTile', ['mdStyle', function(mdStyle) {
       var s = {
         'border-radius': '2px',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-        'transition': 'box-shadow 0.2s linear 0s',
       };
       element.css(mdStyle.general(s));
       element.on('mousedown', function(event) {
@@ -1477,12 +1320,6 @@ mdUXUI.directive('mdWall', ['$window', 'mdStyle', function($window, mdStyle) {
         scope.mdWall = mdStyle.calculateContainer(width, minItemWidth);
         //element.css({'column-count': wall.itemCount});
       };
-      attrs.$observe('minItemWidth', function(value) {
-        if (value) {
-          minItemWidth = parseInt(value);
-          calculateContainer();
-        }
-      });
       calculateContainer();
       angular.element($window).on('resize', function() {
         calculateContainer();
@@ -1531,7 +1368,6 @@ mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
       var s = {
         'border-radius': '2px',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-        'transition': 'box-shadow 0.2s linear 0s',
       };
       element.css(mdStyle.general(s));
       element.on('mousedown', function(event) {
@@ -1550,18 +1386,18 @@ mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle)
       var s = {
         'justify-content': 'flex-start',
         'flex-direction': 'row',
-        'transition': 'right 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s, left 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
+        'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
         'height': '100%',
         'width': '100%',
       };
       element.css(mdStyle.collections(s));
+      var position = 0;
+      var index = attrs.index ? parseInt(attrs.index) : 0;
       var setCarouselSize = function() {
         scope.mdCarouselHeight = parseInt(element.height());
         scope.mdCarouselWidth = parseInt(element.width());
       };
       setCarouselSize();
-      var position = 0;
-      var index = 0;
       var setPosition = function() {
         if (position < 0) {
           position = 0;
@@ -1569,7 +1405,7 @@ mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle)
           position = index;
         }
         var right = position * scope.mdCarouselWidth;
-        element.css({'right': right.toString() + 'px'});
+        element.css({'transform': 'translate(-' + right.toString() + 'px, 0px)'});
       };
       angular.element($window).on('resize', function() {
         setCarouselSize();
@@ -1580,12 +1416,6 @@ mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle)
         setCarouselSize();
         scope.$apply();
         setPosition();
-      });
-      attrs.$observe('index', function(value) {
-        if (value) {
-          index = parseInt(value);
-          setPosition();
-        }
       });
       attrs.$observe('position', function(value) {
         if (value) {
@@ -1648,16 +1478,15 @@ mdUXUI.directive('mdCarouselAction', ['mdStyle', function(mdStyle) {
         'top': '4px',
         'bottom': '4px',
       };
+      if (attrs.side === 'center') {
+        s['left'] = '4px';
+        s['right'] = '4px';
+      } else if (attrs.side === 'left') {
+        s['left'] = '4px';
+      } else if (attrs.side === 'right') {
+        s['right'] = '4px';
+      }
       element.css(mdStyle.collections(s));
-      attrs.$observe('side', function(value) {
-        if (value === 'center') {
-          element.css({'left': '4px', 'right': '4px'});
-        } else if (value === 'left') {
-          element.css({'left': '4px'});
-        } else if (value === 'right') {
-          element.css({'right': '4px'});
-        }
-      });
     }
   };
 }]);
@@ -1806,14 +1635,10 @@ mdUXUI.directive('mdFont', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       attrs.$observe('mdFont', function(value) {
-        if (value) {
-          element.css(mdStyle.font(value));
-        }
+        element.css(mdStyle.font(value));
       });
       attrs.$observe('mdMisc', function(value) {
-        if (value) {
-          element.css(mdStyle.misc(value));
-        }
+        element.css(mdStyle.misc(value));
       });
     }
   };
@@ -1839,9 +1664,7 @@ mdUXUI.directive('mdMisc', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       attrs.$observe('mdMisc', function(value) {
-        if (value) {
-          element.css(mdStyle.misc(value));
-        }
+        element.css(mdStyle.misc(value));
       });
     }
   };
@@ -1851,9 +1674,7 @@ mdUXUI.directive('mdPad', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       attrs.$observe('mdPad', function(value) {
-        if (value) {
-          element.css(mdStyle.pad(value));
-        }
+        element.css(mdStyle.pad(value));
       });
     }
   };
@@ -1886,17 +1707,11 @@ mdUXUI.directive('mdSetHeight', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdGetWidth', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var mdGetWidth = 0;
+      var mdGetWidth = attrs.mdGetWidth ? parseInt(attrs.mdGetWidth) : 0;
       var getWidth = function() {
         scope.mdGetWidth = (parseInt(element.width()) + mdGetWidth);
       };
       getWidth();
-      attrs.$observe('mdGetWidth', function(value) {
-        if (value) {
-          mdGetWidth = parseInt(value);
-          getWidth();
-        }
-      });
       angular.element($window).on('resize', function() {
         getWidth();
         scope.$apply();
@@ -1912,17 +1727,11 @@ mdUXUI.directive('mdGetWidth', ['$window', 'mdStyle', function($window, mdStyle)
 mdUXUI.directive('mdGetHeight', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var mdGetHeight = 0;
+      var mdGetHeight = attrs.mdGetHeight ? parseInt(attrs.mdGetHeight) : 0;
       var getHeight = function() {
         scope.mdGetHeight = (parseInt(element.height()) + mdGetHeight);
       };
       getHeight();
-      attrs.$observe('mdGetHeight', function(value) {
-        if (value) {
-          mdGetHeight = parseInt(value);
-          getHeight();
-        }
-      });
       angular.element($window).on('resize', function() {
         getHeight();
         scope.$apply();
