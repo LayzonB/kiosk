@@ -1356,6 +1356,14 @@ mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
   };
 }]);
 
+mdUXUI.directive('mdCarouselFrame', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      element.css(mdStyle.general({'overflow': 'hidden'}));
+    }
+  };
+}]);
+
 mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {

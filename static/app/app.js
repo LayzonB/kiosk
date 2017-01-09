@@ -1009,11 +1009,22 @@ mdApp.component('mdCartCountries', {
                                           dialog="true"
                                           on-click="$ctrl.selectOption(value)">
                   </md-list-item-clickable>
-                  <md-list-item-multiline-clickable ng-if="$ctrl.countries.has_more" on-click="$ctrl.loadMoreCountries()">
-                    <md-base md-pad="4"
-                             md-icon="avatar"
-                             md-content="refresh"></md-base>
-                  </md-list-item-multiline-clickable>
+                  <button md-button-composite
+                          ng-if="$ctrl.countries.has_more"
+                          ng-click="$ctrl.loadMoreCountries()"
+                          ng-disabled="$ctrl.disabled"
+                          md-disabled="{{$ctrl.disabled}}"
+                          theme="tracking-dark">
+                    <md-list-cell>
+                      <md-list-cell-tile>
+                          <md-action side="center">
+                            <md-base md-pad="12"
+                                     md-icon="avatar"
+                                     md-content="refresh"></md-base>
+                          </md-action>
+                      </md-list-cell-tile>
+                    </md-list-cell>
+                  </button>
                 </md-list>
               </md-page>
             </md-simple>`,
@@ -1845,7 +1856,7 @@ mdApp.component('mdProductInfo', {
 });
 
 mdApp.component('mdProductImageSlider', {
-  template: `<md-base md-get-height="-124" md-set-height="{{mdGetHeight}}" md-get-width>
+  template: `<md-carousel-frame md-get-height="-124" md-set-height="{{mdGetHeight}}" md-get-width>
               <md-carousel-action side="left">
                 <button md-button-composite theme="tracking-dark" ng-click="$ctrl.rewind()">
                   <md-base md-icon="avatar" md-pad="12" md-content="chevron_left"></md-bsae>
@@ -1866,7 +1877,7 @@ mdApp.component('mdProductImageSlider', {
                        md-height="{{mdGetHeight}}">
                 </md-carousel-cell>
               </md-carousel>
-            </md-base>`,
+            </md-carousel-frame>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
