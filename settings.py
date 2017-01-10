@@ -1,0 +1,1 @@
+stripe_secret_key = "sk_test_m4QQ4tXt50ceGcWl9MsiA21B"

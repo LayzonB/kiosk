@@ -1,12 +1,12 @@
 import logging
-import os
 import webapp2
 import json
 
 from google.appengine.api import memcache
 
+import settings
 import stripe
-stripe.api_key = "sk_test_m4QQ4tXt50ceGcWl9MsiA21B"
+stripe.api_key = settings.stripe_secret_key
 
 
 class ViewAccount(webapp2.RequestHandler):
@@ -15,6 +15,7 @@ class ViewAccount(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = memcache.get('account')
+      logging.info('get account from memcache')
       if data is None:
         account = stripe.Account.retrieve()
         data = {
@@ -28,6 +29,7 @@ class ViewAccount(webapp2.RequestHandler):
           'support_url': account.get('support_url')
         }
         memcache.set('account', data)
+        logging.info('set account to memcache')
       self.response.write(json.dumps(data))
     except:
       self.response.write('')
@@ -45,9 +47,11 @@ class ListProducts(webapp2.RequestHandler):
       }
       key = 'products%s' % self.request.get('start', '')
       data = memcache.get(key)
+      logging.info('get products from memcache using the key %s' % key)
       if data is None:
         data = stripe.Product.list(**params)
         memcache.set(key, data)
+        logging.info('set products to memcache using the key %s' % key)
       self.response.write(data)
     except:
       self.response.write('')
@@ -59,6 +63,7 @@ class ViewProduct(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = memcache.get(product)
+      logging.info('get a product from memcache using the key %s' % product)
       if data is None:
         data = stripe.Product.retrieve(product)
         if (data['skus']['has_more']):
@@ -73,6 +78,7 @@ class ViewProduct(webapp2.RequestHandler):
             #has_more = (len(skus['data']) > 0)
           data['skus']['data'] = all_skus
         memcache.set(product, data)
+        logging.info('set a product to memcache using the key %s' % product)
       self.response.write(data)
     except:
       self.response.write('')
@@ -96,43 +102,43 @@ class CreateOrder(webapp2.RequestHandler):
       return new_items
     
     def order_is_valid(order):
-      if (order['currency'] is None or \
-          order['email'] is None or \
-          len(order['items']) == 0 or \
-          order['shipping']['name'] is None or \
-          order['shipping']['phone'] is None or \
-          order['shipping']['address']['country'] is None or \
-          order['shipping']['address']['state'] is None or \
-          order['shipping']['address']['city'] is None or \
-          order['shipping']['address']['postal_code'] is None or \
-          order['shipping']['address']['line1'] is None):
+      if (not order['currency'] or \
+          not order['email'] or \
+          not order['items'] or \
+          not order['shipping']['name'] or \
+          not order['shipping']['phone'] or \
+          not order['shipping']['address']['country'] or \
+          not order['shipping']['address']['state'] or \
+          not order['shipping']['address']['city'] or \
+          not order['shipping']['address']['postal_code'] or \
+          not order['shipping']['address']['line1']):
         return False
       else:
         return True
     
     try:
       params = json.loads(self.request.body)
-      if (params.get('id', None)):
+      if (params.get('id', '')):
         self.response.write('')
         return
       order = {
-        'currency': params.get('currency', None),
-        'email': params.get('email', None),
+        'currency': params.get('currency', ''),
+        'email': params.get('email', ''),
         'items': get_items(params.get('items', [])),
         'shipping': {
-          'name': params.get('shipping', {}).get('name', None),
-          'phone': params.get('shipping', {}).get('phone', None),
+          'name': params.get('shipping', {}).get('name', ''),
+          'phone': params.get('shipping', {}).get('phone', ''),
           'address': {
-            'country': params.get('shipping', {}).get('address', {}).get('country', None),
-            'state': params.get('shipping', {}).get('address', {}).get('state', None),
-            'city': params.get('shipping', {}).get('address', {}).get('city', None),
-            'postal_code': params.get('shipping', {}).get('address', {}).get('postal_code', None),
-            'line1': params.get('shipping', {}).get('address', {}).get('line1', None),
-            'line2': params.get('shipping', {}).get('address', {}).get('line2', None)
+            'country': params.get('shipping', {}).get('address', {}).get('country', ''),
+            'state': params.get('shipping', {}).get('address', {}).get('state', ''),
+            'city': params.get('shipping', {}).get('address', {}).get('city', ''),
+            'postal_code': params.get('shipping', {}).get('address', {}).get('postal_code', ''),
+            'line1': params.get('shipping', {}).get('address', {}).get('line1', ''),
+            'line2': params.get('shipping', {}).get('address', {}).get('line2', '')
           }
         }
       }
-      if (params.get('coupon', None)):
+      if (params.get('coupon', '')):
         order['coupon'] = params.get('coupon')
       if (order_is_valid(order)):
         data = stripe.Order.create(**order)
@@ -147,12 +153,12 @@ class UpdateOrder(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       params = json.loads(self.request.body)
-      if (params.get('id', None)):
+      if (params.get('id', '') != ''):
         order = stripe.Order.retrieve(params.get('id', None))
         if (order):
           if (params.get('selected_shipping_method', None)):
             order['selected_shipping_method'] = params.get('selected_shipping_method')
-          if (params.get('coupon', None)):
+          if (params.get('coupon', '')):
             order['coupon'] = params.get('coupon')
           if ((order['status'] == 'created') and (params.get('status') == 'canceled')):
             order['status'] = params.get('status')
@@ -173,6 +179,7 @@ class PayOrder(webapp2.RequestHandler):
         if (order):
           data = order.pay(source=params.get('source'))
           memcache.flush_all()
+          logging.info('memcache flushed')
           self.response.write(data)
     except:
       self.response.write('')

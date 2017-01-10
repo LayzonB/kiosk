@@ -1540,13 +1540,13 @@ mdApp.component('mdCart', {
                                 step="$ctrl.step"
                                 cart="$ctrl.cart"
                                 on-open-countries="$ctrl.openCountries({value: value})"
-                                on-update="$ctrl.updateCart({name: name, value: value})"
+                                on-update="$ctrl.updateCart(name, value)"
                                 on-submit="$ctrl.stepThree()"></md-cart-shipping>
               <md-cart-shipping-methods settings="$ctrl.settings"
                                         ng-if="(($ctrl.step > 1) && ($ctrl.step < 5))"
                                         step="$ctrl.step"
                                         cart="$ctrl.cart"
-                                        on-update="$ctrl.updateCart({name: name, value: value})"
+                                        on-update="$ctrl.updateCart(name, value)"
                                         on-submit="$ctrl.stepFour()"></md-cart-shipping-methods>
               <md-cart-review settings="$ctrl.settings"
                               ng-if="(($ctrl.step > 2) && ($ctrl.step < 6))"
@@ -1557,7 +1557,7 @@ mdApp.component('mdCart', {
                            ng-if="(($ctrl.step > 3) && ($ctrl.step < 7))"
                            step="$ctrl.step"
                            cart="$ctrl.cart"
-                           on-update="$ctrl.updateCart({name: name, value: value})"
+                           on-update="$ctrl.updateCart(name, value)"
                            on-submit="$ctrl.stepSix()"></md-cart-pay>
               <md-cart-end settings="$ctrl.settings"
                            ng-if="($ctrl.step > 4)"
@@ -1647,15 +1647,14 @@ mdApp.component('mdCart', {
     };
     
     ctrl.$doCheck = function() {
-      if (ctrl.cart) {
-        if (ctrl.cart.status === 'new') {
-          if (ctrl.cart.items.length === 0) {
-            ctrl.step = -1;
-          }
-        } else if (ctrl.cart.status === 'created') {
-          if ((ctrl.cart.shipping_methods.length === 0) && (ctrl.step === 3)) {
-            ctrl.step = 4;
-          }
+      ctrl.cart = mdCartFactory.getCart();
+      if (ctrl.cart.status === 'new') {
+        if (ctrl.cart.items.length === 0) {
+          ctrl.step = -1;
+        }
+      } else if (ctrl.cart.status === 'created') {
+        if ((ctrl.cart.shipping_methods.length === 0) && (ctrl.step === 3)) {
+          ctrl.step = 4;
         }
       }
     };
