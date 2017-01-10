@@ -19,7 +19,9 @@ mdApp.run([function(){
 
 mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   
-  var resetCart = function(cart) {
+  var cart;
+  
+  var resetCart = function() {
     var testCart = {
       'currency': '',
       'coupon': '',
@@ -70,42 +72,43 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
       'amount': '',
       'status': 'new'
     };
+    cart = angular.merge({}, newCart);
     $http.get('account', {'cache': true}).then(function(response) {
       var account = response.data;
-      angular.merge(cart, testCart);
       cart.currency = account.default_currency;
-      return cart;
     });
   };
   
-  var createCart = function(cart) {
+  var getCart = function() {
+    return cart;
+  };
+  
+  var createCart = function() {
+    resetCart();
     var orderId = $cookies.get('orderId');
     if (orderId) {
       $http.get('order/' + orderId, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
-        return cart;
       });
-    } else {
-      resetCart(cart);
     }
   };
   
-  var deleteCart = function(cart) {
+  var deleteCart = function() {
     var orderId = $cookies.get('orderId');
     if (orderId) {
       var order = {'id': orderId, 'status': 'canceled'};
       $http.post('order/update', order, {'cache': true}).then(function(response) {
         if (response.status === 200) {
           $cookies.remove('orderId', orderId);
-          resetCart(cart);
+          resetCart();
         }
       });
     } else {
-      resetCart(cart);
+      resetCart();
     }
   };
   
-  var updateCart = function(cart, name, value) {
+  var updateCart = function(name, value) {
     if (cart.status === 'new') {
       if (name === 'items') {
         var updated = false;
@@ -179,25 +182,22 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
         cart.card.cvc = value;
       }
     }
-    return cart;
   };
   
-  var updateOrder = function(cart) {
+  var saveCart = function() {
     if (!cart.id && (cart.status === 'new')) {
       $http.post('order/create', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
         $cookies.put('orderId', cart.id);
-        return cart;
       });
     } else if (cart.id && (cart.status === 'created')) {
       $http.post('order/update', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
-        return cart;
       });
     }
   };
   
-  var payOrder = function(cart) {
+  var payCart = function() {
     var pay = function(status, response) {
       if ((status === 200) && (!response.used) && (response.id)) {
         var order = {
@@ -208,7 +208,6 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
           angular.merge(cart, response.data);
           cart.card = {};
           $cookies.remove('orderId');
-          return cart;
         });
       }
     };
@@ -230,7 +229,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     }
   };
   
-  var getCartItemQuantity = function(cart, skuId) {
+  var getCartItemQuantity = function(skuId) {
     var quantity = 0;
     angular.forEach(cart.items, function(item, key) {
       if ((item.type === 'sku') && (item.parent === skuId)) {
@@ -241,11 +240,12 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   };
   
   return {
+    'getCart': getCart,
     'createCart': createCart,
     'deleteCart': deleteCart,
     'updateCart': updateCart,
-    'updateOrder': updateOrder,
-    'payOrder': payOrder,
+    'saveCart': saveCart,
+    'payCart': payCart,
     'getCartItemQuantity': getCartItemQuantity
   };
   
@@ -1540,13 +1540,13 @@ mdApp.component('mdCart', {
                                 step="$ctrl.step"
                                 cart="$ctrl.cart"
                                 on-open-countries="$ctrl.openCountries({value: value})"
-                                on-update="$ctrl.onUpdateCart({name: name, value: value})"
+                                on-update="$ctrl.updateCart({name: name, value: value})"
                                 on-submit="$ctrl.stepThree()"></md-cart-shipping>
               <md-cart-shipping-methods settings="$ctrl.settings"
                                         ng-if="(($ctrl.step > 1) && ($ctrl.step < 5))"
                                         step="$ctrl.step"
                                         cart="$ctrl.cart"
-                                        on-update="$ctrl.onUpdateCart({name: name, value: value})"
+                                        on-update="$ctrl.updateCart({name: name, value: value})"
                                         on-submit="$ctrl.stepFour()"></md-cart-shipping-methods>
               <md-cart-review settings="$ctrl.settings"
                               ng-if="(($ctrl.step > 2) && ($ctrl.step < 6))"
@@ -1557,7 +1557,7 @@ mdApp.component('mdCart', {
                            ng-if="(($ctrl.step > 3) && ($ctrl.step < 7))"
                            step="$ctrl.step"
                            cart="$ctrl.cart"
-                           on-update="$ctrl.onUpdateCart({name: name, value: value})"
+                           on-update="$ctrl.updateCart({name: name, value: value})"
                            on-submit="$ctrl.stepSix()"></md-cart-pay>
               <md-cart-end settings="$ctrl.settings"
                            ng-if="($ctrl.step > 4)"
@@ -1571,7 +1571,7 @@ mdApp.component('mdCart', {
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
                                on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
-  controller: ['$scope', '$element', '$attrs', '$http', function($scope, $element, $attrs, $http) {
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', function($scope, $element, $attrs, $http, mdCartFactory) {
     var ctrl = this;
     
     ctrl.closeCart = function() {
@@ -1581,7 +1581,7 @@ mdApp.component('mdCart', {
     ctrl.deleteCart = function(value) {
       ctrl.deleteDialog = false;
       if (value) {
-        ctrl.onDeleteCart();
+        mdCartFactory.deleteCart();
       }
     };
     
@@ -1590,9 +1590,13 @@ mdApp.component('mdCart', {
       ctrl.countriesDialog = true;
     };
     
+    ctrl.updateCart = function(name, value) {
+      mdCartFactory.updateCart(name, value);
+    };
+    
     ctrl.selectCountry = function(value) {
       if (value) {
-        ctrl.onUpdateCart({'name': 'country', 'value': value});
+        ctrl.updateCart('country', value);
       }
       ctrl.countriesDialog = false;
     };
@@ -1603,12 +1607,12 @@ mdApp.component('mdCart', {
     
     ctrl.stepThree = function() {
       ctrl.step = 3;
-      ctrl.onUpdateOrder();
+      mdCartFactory.saveCart();
     };
     
     ctrl.stepFour = function() {
       ctrl.step = 4;
-      ctrl.onUpdateOrder();
+      mdCartFactory.saveCart();
     };
     
     ctrl.stepFive = function() {
@@ -1617,10 +1621,11 @@ mdApp.component('mdCart', {
     
     ctrl.stepSix = function() {
       ctrl.step = 6;
-      ctrl.onPayOrder();
+      mdCartFactory.payCart();
     };
     
     ctrl.$onInit = function() {
+      ctrl.cart = mdCartFactory.getCart();
       if (ctrl.cart.status === 'new') {
         if (ctrl.cart.items.length > 0) {
           ctrl.step = 1;
@@ -1642,25 +1647,22 @@ mdApp.component('mdCart', {
     };
     
     ctrl.$doCheck = function() {
-      if (ctrl.cart.status === 'new') {
-        if (ctrl.cart.items.length === 0) {
-          ctrl.step = -1;
-        }
-      } else if (ctrl.cart.status === 'created') {
-        if ((ctrl.cart.shipping_methods.length === 0) && (ctrl.step === 3)) {
-          ctrl.step = 4;
+      if (ctrl.cart) {
+        if (ctrl.cart.status === 'new') {
+          if (ctrl.cart.items.length === 0) {
+            ctrl.step = -1;
+          }
+        } else if (ctrl.cart.status === 'created') {
+          if ((ctrl.cart.shipping_methods.length === 0) && (ctrl.step === 3)) {
+            ctrl.step = 4;
+          }
         }
       }
     };
   }],
   bindings: {
     settings: '<',
-    cart: '<',
     onOpenProduct: '&',
-    onUpdateCart: '&',
-    onDeleteCart: '&',
-    onUpdateOrder: '&',
-    onPayOrder: '&',
     onExit: '&'
   }
 });
@@ -1945,8 +1947,8 @@ mdApp.component('mdProduct', {
                                      max="$ctrl.sku.inventory | formatInventory"
                                      step="1"
                                      required="true"
-                                     value="$ctrl.quantity"
-                                     on-change="$ctrl.onUpdateQuantity({product: $ctrl.product, sku: $ctrl.sku, quantity: value})"></md-sku-quantity>
+                                     value="$ctrl.skuQuantity"
+                                     on-change="$ctrl.updateQuantity(value)"></md-sku-quantity>
                   </md-list>
                 </md-form>
               </md-page>
@@ -1956,7 +1958,7 @@ mdApp.component('mdProduct', {
                                       attributes="$ctrl.sku.attributes"
                                       attribute="$ctrl.attribute"
                                       on-select="$ctrl.switchSku(attribute, option)"></md-sku-attribute-options>`,
-  controller: ['$scope', '$element', '$attrs', '$http',  function($scope, $element, $attrs, $http) {
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory',  function($scope, $element, $attrs, $http, mdCartFactory) {
     var ctrl = this;
     
     var getSku = function(product, skuId, skuAttributes) {
@@ -1984,6 +1986,21 @@ mdApp.component('mdProduct', {
       return angular.equals({}, result) ? false : result;
     };
     
+    ctrl.updateQuantity = function(quantity) {
+      var value = {
+        'type': 'sku',
+        'parent': ctrl.sku.id,
+        'quantity': quantity,
+        'amount': (ctrl.sku.price * quantity),
+        'price': ctrl.sku.price,
+        'currency': ctrl.sku.currency,
+        'description': ctrl.product.name,
+        'product': ctrl.product.id
+      };
+      mdCartFactory.updateCart('items', value);
+      ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
+    };
+    
     ctrl.switchSku = function(attribute, option) {
       if (option) {
         var skuAttributes = angular.merge({}, ctrl.sku.attributes);
@@ -1991,7 +2008,7 @@ mdApp.component('mdProduct', {
         var sku = getSku(ctrl.product, false, skuAttributes);
         if (sku) {
           ctrl.sku = sku;
-          ctrl.onSwitchSku({'product': ctrl.product, 'sku': ctrl.sku});
+          ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
         }
       }
       ctrl.attribute = false;
@@ -2016,7 +2033,7 @@ mdApp.component('mdProduct', {
             var sku = getSku(ctrl.product, ctrl.skuId);
             if (sku) {
               ctrl.sku = sku;
-              ctrl.onSwitchSku({'product': ctrl.product, 'sku': ctrl.sku});
+              ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
             }
           }
         });
@@ -2032,9 +2049,6 @@ mdApp.component('mdProduct', {
     settings: '<',
     productId: '<',
     skuId: '<',
-    quantity: '<',
-    onSwitchSku: '&',
-    onUpdateQuantity: '&',
     onExit: '&'
   }
 });
@@ -2114,18 +2128,11 @@ mdApp.component('mdHome', {
                      cart="$ctrl.cart"
                      ng-if="$ctrl.cartDialog"
                      on-open-product="$ctrl.openProduct(productId, skuId)"
-                     on-update-cart="$ctrl.updateCart(name, value)"
-                     on-update-order="$ctrl.updateOrder()"
-                     on-pay-order="$ctrl.payOrder()"
-                     on-delete-cart="$ctrl.deleteCart()"
                      on-exit="$ctrl.closeCart()"></md-cart>
             <md-product settings="$ctrl.settings"
                         product-id="$ctrl.productId"
                         sku-id="$ctrl.skuId"
-                        quantity="$ctrl.skuQuantity"
                         ng-if="$ctrl.productId"
-                        on-switch-sku="$ctrl.switchProductSku(product, sku)"
-                        on-update-quantity="$ctrl.updateProductSkuQuantity(product, sku, quantity)"
                         on-exit="$ctrl.closeProduct()"></md-product>`,
   controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', function($scope, $element, $attrs, $http, mdCartFactory) {
     var ctrl = this;
@@ -2140,48 +2147,12 @@ mdApp.component('mdHome', {
       ctrl.skuId = false;
     };
     
-    ctrl.switchProductSku = function(product, sku) {
-      ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.cart, sku.id);
-    };
-    
-    ctrl.updateProductSkuQuantity = function(product, sku, quantity) {
-      var value = {
-        'type': 'sku',
-        'parent': sku.id,
-        'quantity': quantity,
-        'amount': (sku.price * quantity),
-        'price': sku.price,
-        'currency': sku.currency,
-        'description': product.name,
-        'product': product.id
-      };
-      mdCartFactory.updateCart(ctrl.cart, 'items', value);
-      ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.cart, sku.id);
-    };
-    
     ctrl.openCart = function() {
       ctrl.cartDialog = true;
     };
     
     ctrl.closeCart = function() {
       ctrl.cartDialog = false;
-    };
-    
-    ctrl.updateCart = function(name, value) {
-      mdCartFactory.updateCart(ctrl.cart, name, value);
-    };
-    
-    ctrl.deleteCart = function() {
-      ctrl.cart = {};
-      mdCartFactory.deleteCart(ctrl.cart);
-    };
-    
-    ctrl.updateOrder = function() {
-      mdCartFactory.updateOrder(ctrl.cart);
-    };
-    
-    ctrl.payOrder = function() {
-      mdCartFactory.payOrder(ctrl.cart);
     };
     
     ctrl.$onInit = function() {
@@ -2195,9 +2166,8 @@ mdApp.component('mdHome', {
         });
         $http.get('account', {'cache': true}).then(function(response) {
           ctrl.settings.account = response.data;
-          ctrl.cart = {};
-          mdCartFactory.createCart(ctrl.cart);
         });
+        mdCartFactory.createCart();
         ctrl.productId = false;
         ctrl.cartDialog = false;
       });
