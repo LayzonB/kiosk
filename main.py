@@ -32,7 +32,7 @@ class ViewAccount(webapp2.RequestHandler):
         logging.info('set account to memcache')
       self.response.write(json.dumps(data))
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class ListProducts(webapp2.RequestHandler):
@@ -54,7 +54,7 @@ class ListProducts(webapp2.RequestHandler):
         logging.info('set products to memcache using the key %s' % key)
       self.response.write(data)
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class ViewProduct(webapp2.RequestHandler):
@@ -81,7 +81,7 @@ class ViewProduct(webapp2.RequestHandler):
         logging.info('set a product to memcache using the key %s' % product)
       self.response.write(data)
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class CreateOrder(webapp2.RequestHandler):
@@ -101,50 +101,51 @@ class CreateOrder(webapp2.RequestHandler):
               })
       return new_items
     
-    def order_is_valid(order):
-      if (not order['currency'] or \
-          not order['email'] or \
-          not order['items'] or \
-          not order['shipping']['name'] or \
-          not order['shipping']['phone'] or \
-          not order['shipping']['address']['country'] or \
-          not order['shipping']['address']['state'] or \
-          not order['shipping']['address']['city'] or \
-          not order['shipping']['address']['postal_code'] or \
-          not order['shipping']['address']['line1']):
-        return False
-      else:
-        return True
+    def get_shipping(shipping):
+      new_shipping = {}
+      name = shipping.get('name', '')
+      phone = shipping.get('phone', '')
+      country = shipping.get('address', {}).get('country', '')
+      state = shipping.get('address', {}).get('state', '')
+      city = shipping.get('address', {}).get('city', '')
+      postal_code = shipping.get('address', {}).get('postal_code', '')
+      line1 = shipping.get('address', {}).get('line1', '')
+      line2 = shipping.get('address', {}).get('line2', '')
+      if (name and phone and country and state and city and postal_code and line1):
+        new_shipping = {
+          'name': name,
+          'phone': phone,
+          'address': {
+            'country': country,
+            'state': state,
+            'city': city,
+            'postal_code': postal_code,
+            'line1': line1,
+            'line2': line2
+          }
+        }
+      return new_shipping
     
     try:
       params = json.loads(self.request.body)
       if (params.get('id', '')):
-        self.response.write('')
+        self.response.write(json.dumps({'error': 'existing_order'}))
         return
       order = {
         'currency': params.get('currency', ''),
         'email': params.get('email', ''),
         'items': get_items(params.get('items', [])),
-        'shipping': {
-          'name': params.get('shipping', {}).get('name', ''),
-          'phone': params.get('shipping', {}).get('phone', ''),
-          'address': {
-            'country': params.get('shipping', {}).get('address', {}).get('country', ''),
-            'state': params.get('shipping', {}).get('address', {}).get('state', ''),
-            'city': params.get('shipping', {}).get('address', {}).get('city', ''),
-            'postal_code': params.get('shipping', {}).get('address', {}).get('postal_code', ''),
-            'line1': params.get('shipping', {}).get('address', {}).get('line1', ''),
-            'line2': params.get('shipping', {}).get('address', {}).get('line2', '')
-          }
-        }
+        'shipping': get_shipping(params.get('shipping', {}))
       }
       if (params.get('coupon', '')):
         order['coupon'] = params.get('coupon')
-      if (order_is_valid(order)):
+      if (order['currency'] and order['email'] and order['items'] and order['shipping']):
         data = stripe.Order.create(**order)
         self.response.write(data)
+      else:
+        self.response.write(json.dumps({'error': 'invalid_order'}))
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class UpdateOrder(webapp2.RequestHandler):
@@ -165,7 +166,7 @@ class UpdateOrder(webapp2.RequestHandler):
           data = order.save()
           self.response.write(data)
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class PayOrder(webapp2.RequestHandler):
@@ -182,7 +183,7 @@ class PayOrder(webapp2.RequestHandler):
           logging.info('memcache flushed')
           self.response.write(data)
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class ViewOrder(webapp2.RequestHandler):
@@ -193,7 +194,7 @@ class ViewOrder(webapp2.RequestHandler):
       data = stripe.Order.retrieve(order)
       self.response.write(data)
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 class CreateSKUs(webapp2.RequestHandler):
@@ -221,7 +222,7 @@ class CreateSKUs(webapp2.RequestHandler):
             data.append(stripe.SKU.create(**sku))
       self.response.write(data)
     except:
-      self.response.write('')
+      self.response.write(json.dumps({'error': 'unknown'}))
 
 
 APP = webapp2.WSGIApplication([webapp2.Route(r'/account', handler=ViewAccount),
