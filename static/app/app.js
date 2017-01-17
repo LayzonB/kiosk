@@ -17,6 +17,27 @@ mdApp.run([function(){
 
 /*--------------------------------------------------Services--------------------------------------------------*/
 
+mdApp.factory('mdIntercomFactory', [function() {
+  
+  var call = function() {
+    return;
+  };
+  
+  var registerCallback = function(callback) {
+    call = callback;
+  };
+  
+  var getCallback = function() {
+    return call;
+  };
+  
+  return {
+    'register': registerCallback,
+    'get': getCallback
+  };
+  
+}]);
+
 mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   
   var cart;
@@ -93,7 +114,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     }
   };
   
-  var deleteCart = function() {
+  var deleteCart = function(callback) {
     var orderId = $cookies.get('orderId');
     if (orderId) {
       var order = {'id': orderId, 'status': 'canceled'};
@@ -101,10 +122,12 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
         if (response.status === 200) {
           $cookies.remove('orderId', orderId);
           resetCart();
+          callback();
         }
       });
     } else {
       resetCart();
+      callback();
     }
   };
   
@@ -184,20 +207,22 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     }
   };
   
-  var saveCart = function() {
+  var saveCart = function(callback) {
     if (!cart.id && (cart.status === 'new')) {
       $http.post('order/create', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
         $cookies.put('orderId', cart.id);
+        callback();
       });
     } else if (cart.id && (cart.status === 'created')) {
       $http.post('order/update', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
+        callback();
       });
     }
   };
   
-  var payCart = function() {
+  var payCart = function(callback) {
     var pay = function(status, response) {
       if ((status === 200) && (!response.used) && (response.id)) {
         var order = {
@@ -208,6 +233,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
           angular.merge(cart, response.data);
           cart.card = {};
           $cookies.remove('orderId');
+          callback();
         });
       }
     };
@@ -466,6 +492,43 @@ mdApp.component('mdAppIcon', {
             </md-base>`,
   bindings: {
     icon: '<'
+  }
+});
+
+mdApp.component('mdBrief', {
+  template: `<md-snack-bar md-modal-slide="bottom" active="{{$ctrl.alive}}">
+              <md-base md-font="brief" md-content="{{$ctrl.brief}}"></md-base>
+            </md-snack-bar>`,
+  controller: ['$scope', '$element', '$attrs', '$timeout', function($scope, $element, $attrs, $timeout) {
+    var ctrl = this;
+    var show_snackbar;
+    var hide_snackbar;
+    ctrl.show = function() {
+      ctrl.brief = ctrl.message;
+      ctrl.alive = true;
+      $timeout(function() {ctrl.onShow();}, 300);
+    };
+    ctrl.hide = function() {
+      ctrl.alive = false;
+      $timeout(function() {ctrl.brief = ''; ctrl.onHide();}, 300);
+    };
+    ctrl.$onChanges = function(changes) {
+      if (changes.message.currentValue !== changes.message.previousValue) {
+        var readingTime = ctrl.message.length * 200;
+        $timeout.cancel(hide_snackbar);
+        ctrl.alive = false;
+        show_snackbar = $timeout(ctrl.show, 0);
+        hide_snackbar = $timeout(ctrl.hide, (readingTime + 300));
+      }
+    };
+    ctrl.$onInit = function() {
+      ctrl.brief = '';
+    };
+  }],
+  bindings: {
+    message: '<',
+    onShow: '&',
+    onHide: '&'
   }
 });
 
@@ -909,6 +972,8 @@ mdApp.component('mdForm', {
 mdApp.component('mdCartButton', {
   template: `<button md-button-composite md-pad="16"
                      ng-click="$ctrl.onClick({value: $ctrl.value})"
+                     ng-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
                      theme="tracking-dark">
               <md-base md-font="body2" md-misc="textCenter" md-content="{{$ctrl.name.toUpperCase()}}">
               </md-base>
@@ -922,6 +987,7 @@ mdApp.component('mdCartButton', {
   bindings: {
     name: '<',
     value: '<',
+    disabled: '<',
     onClick: '&'
   }
 });
@@ -1262,6 +1328,7 @@ mdApp.component('mdCartShipping', {
                   <md-selection-input name="'country'"
                                       required="true"
                                       trim="true"
+                                      disabled="$ctrl.disabled"
                                       label="$ctrl.settings.modals.cart.shipping.address.country.label"
                                       instructions="$ctrl.settings.modals.cart.shipping.address.country.instructions"
                                       value="$ctrl.cart.shipping.address.country"
@@ -1270,6 +1337,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'state'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.address.state.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.address.state.instructions"
                                  value="$ctrl.cart.shipping.address.state"
@@ -1277,6 +1345,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'city'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.address.city.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.address.city.instructions"
                                  value="$ctrl.cart.shipping.address.city"
@@ -1284,6 +1353,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'postal_code'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.address.postal_code.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.address.postal_code.instructions"
                                  value="$ctrl.cart.shipping.address.postal_code"
@@ -1291,6 +1361,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'line1'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.address.line1.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.address.line1.instructions"
                                  value="$ctrl.cart.shipping.address.line1"
@@ -1298,6 +1369,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'line2'"
                                  required="false"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.address.line2.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.address.line2.instructions"
                                  value="$ctrl.cart.shipping.address.line2"
@@ -1305,6 +1377,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'name'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.name.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.name.instructions"
                                  value="$ctrl.cart.shipping.name"
@@ -1312,6 +1385,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'email'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.email.label"
                                  instructions="$ctrl.settings.modals.cart.email.instructions"
                                  value="$ctrl.cart.email"
@@ -1320,6 +1394,7 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'phone'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.phone.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.phone.instructions"
                                  value="$ctrl.cart.shipping.phone"
@@ -1327,6 +1402,7 @@ mdApp.component('mdCartShipping', {
                 </md-form>
               </md-list>
               <md-cart-button name="$ctrl.settings.modals.cart.steps.two"
+                              disabled="$ctrl.disabled"
                               on-click="$ctrl.submit()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
@@ -1350,6 +1426,7 @@ mdApp.component('mdCartShipping', {
     settings: '<',
     cart: '<',
     step: '<',
+    disabled: '<',
     onOpenCountries: '&',
     onUpdate: '&',
     onSubmit: '&'
@@ -1367,10 +1444,12 @@ mdApp.component('mdCartShippingMethods', {
                                   sample="item.id"
                                   first="item.amount | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[item.currency.toUpperCase()]"
                                   second="item.description"
+                                  disabled="$ctrl.disabled"
                                   on-select="$ctrl.onUpdate({name: name, value: value})"></md-radio-input>
                 </md-form>
               </md-list>
               <md-cart-button name="$ctrl.settings.modals.cart.steps.three"
+                              disabled="$ctrl.disabled"
                               on-click="$ctrl.submit()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
@@ -1390,6 +1469,7 @@ mdApp.component('mdCartShippingMethods', {
     settings: '<',
     cart: '<',
     step: '<',
+    disabled: '<',
     onUpdate: '&',
     onSubmit: '&'
   }
@@ -1427,6 +1507,7 @@ mdApp.component('mdCartPay', {
                   <md-text-input name="'number'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.card.number.label"
                                  instructions="$ctrl.settings.modals.cart.card.number.instructions"
                                  value="$ctrl.cart.card.number"
@@ -1434,6 +1515,7 @@ mdApp.component('mdCartPay', {
                   <md-text-input name="'exp_month'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.card.exp_month.label"
                                  instructions="$ctrl.settings.modals.cart.card.exp_month.instructions"
                                  value="$ctrl.cart.card.exp_month"
@@ -1441,6 +1523,7 @@ mdApp.component('mdCartPay', {
                   <md-text-input name="'exp_year'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.card.exp_year.label"
                                  instructions="$ctrl.settings.modals.cart.card.exp_year.instructions"
                                  value="$ctrl.cart.card.exp_year"
@@ -1448,6 +1531,7 @@ mdApp.component('mdCartPay', {
                   <md-text-input name="'cvc'"
                                  required="true"
                                  trim="true"
+                                 disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.card.cvc.label"
                                  instructions="$ctrl.settings.modals.cart.card.cvc.instructions"
                                  value="$ctrl.cart.card.cvc"
@@ -1455,7 +1539,9 @@ mdApp.component('mdCartPay', {
                   <md-list-item-multiline>
                     <md-action side="center">
                       <button md-button-text-raised
-                              md-raised="true"
+                              md-raised="{{!$ctrl.disabled}}"
+                              ng-disabled="$ctrl.disabled"
+                              md-disabled="{{$ctrl.disabled}}"
                               md-content="{{$ctrl.settings.modals.cart.steps.five + ' ' + ($ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()])}}"
                               ng-click="$ctrl.submit()"></button>
                     </md-action>
@@ -1484,6 +1570,7 @@ mdApp.component('mdCartPay', {
     settings: '<',
     cart: '<',
     step: '<',
+    disabled: '<',
     onUpdate: '&',
     onSubmit: '&'
   }
@@ -1539,6 +1626,7 @@ mdApp.component('mdCart', {
                                 ng-if="(($ctrl.step > 0) && ($ctrl.step < 4))"
                                 step="$ctrl.step"
                                 cart="$ctrl.cart"
+                                disabled="$ctrl.disabled"
                                 on-open-countries="$ctrl.openCountries({value: value})"
                                 on-update="$ctrl.updateCart(name, value)"
                                 on-submit="$ctrl.stepThree()"></md-cart-shipping>
@@ -1546,6 +1634,7 @@ mdApp.component('mdCart', {
                                         ng-if="(($ctrl.step > 1) && ($ctrl.step < 5))"
                                         step="$ctrl.step"
                                         cart="$ctrl.cart"
+                                        disabled="$ctrl.disabled"
                                         on-update="$ctrl.updateCart(name, value)"
                                         on-submit="$ctrl.stepFour()"></md-cart-shipping-methods>
               <md-cart-review settings="$ctrl.settings"
@@ -1557,12 +1646,13 @@ mdApp.component('mdCart', {
                            ng-if="(($ctrl.step > 3) && ($ctrl.step < 7))"
                            step="$ctrl.step"
                            cart="$ctrl.cart"
+                           disabled="$ctrl.disabled"
                            on-update="$ctrl.updateCart(name, value)"
                            on-submit="$ctrl.stepSix()"></md-cart-pay>
               <md-cart-end settings="$ctrl.settings"
                            ng-if="($ctrl.step > 4)"
                            step="$ctrl.step"
-                           cart="$ctrl.cart"></md-cart-end>
+                           cart="$ctrl.order"></md-cart-end>
             </md-full-screen>
             <md-cart-delete settings="$ctrl.settings"
                             on-close="$ctrl.deleteCart(value)"
@@ -1571,7 +1661,7 @@ mdApp.component('mdCart', {
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
                                on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
-  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', function($scope, $element, $attrs, $http, mdCartFactory) {
+  controller: ['$scope', '$element', '$attrs', 'mdCartFactory', function($scope, $element, $attrs, mdCartFactory) {
     var ctrl = this;
     
     ctrl.closeCart = function() {
@@ -1579,9 +1669,15 @@ mdApp.component('mdCart', {
     };
     
     ctrl.deleteCart = function(value) {
+      var callback = function() {
+        ctrl.disabled = false;
+        ctrl.cart = mdCartFactory.getCart();
+      };
+      
+      ctrl.disabled = true;
       ctrl.deleteDialog = false;
       if (value) {
-        mdCartFactory.deleteCart();
+        mdCartFactory.deleteCart(callback);
       }
     };
     
@@ -1592,6 +1688,7 @@ mdApp.component('mdCart', {
     
     ctrl.updateCart = function(name, value) {
       mdCartFactory.updateCart(name, value);
+      ctrl.cart = mdCartFactory.getCart();
     };
     
     ctrl.selectCountry = function(value) {
@@ -1606,13 +1703,25 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepThree = function() {
-      ctrl.step = 3;
-      mdCartFactory.saveCart();
+      var callback = function() {
+        ctrl.step = 3;
+        ctrl.disabled = false;
+        ctrl.cart = mdCartFactory.getCart();
+      };
+      
+      ctrl.disabled = true;
+      mdCartFactory.saveCart(callback);
     };
     
     ctrl.stepFour = function() {
-      ctrl.step = 4;
-      mdCartFactory.saveCart();
+      var callback = function() {
+        ctrl.step = 4;
+        ctrl.disabled = false;
+        ctrl.cart = mdCartFactory.getCart();
+      };
+      
+      ctrl.disabled = true;
+      mdCartFactory.saveCart(callback);
     };
     
     ctrl.stepFive = function() {
@@ -1620,8 +1729,16 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepSix = function() {
-      ctrl.step = 6;
-      mdCartFactory.payCart();
+      var callback = function() {
+        ctrl.step = 6;
+        ctrl.disabled = false;
+        ctrl.order = mdCartFactory.getCart();
+        mdCartFactory.createCart();
+        ctrl.cart = mdCartFactory.getCart();
+      };
+      
+      ctrl.disabled = true;
+      mdCartFactory.payCart(callback);
     };
     
     ctrl.$onInit = function() {
@@ -1641,13 +1758,13 @@ mdApp.component('mdCart', {
       } else if (ctrl.cart.status === 'paid') {
         ctrl.step = 6;
       }
+      ctrl.disabled = false;
       ctrl.dialog = true;
       ctrl.deleteDialog = false;
       ctrl.countriesDialog = false;
     };
     
     ctrl.$doCheck = function() {
-      ctrl.cart = mdCartFactory.getCart();
       if (ctrl.cart.status === 'new') {
         if (ctrl.cart.items.length === 0) {
           ctrl.step = -1;
@@ -1957,7 +2074,7 @@ mdApp.component('mdProduct', {
                                       attributes="$ctrl.sku.attributes"
                                       attribute="$ctrl.attribute"
                                       on-select="$ctrl.switchSku(attribute, option)"></md-sku-attribute-options>`,
-  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory',  function($scope, $element, $attrs, $http, mdCartFactory) {
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', 'mdIntercomFactory',  function($scope, $element, $attrs, $http, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
     var getSku = function(product, skuId, skuAttributes) {
@@ -2027,6 +2144,9 @@ mdApp.component('mdProduct', {
       ctrl.attribute = false;
       if (ctrl.productId) {
         $http.get('product/' + ctrl.productId.toString(), {'cache': true}).then(function(response) {
+          if (response.data && response.data.error) {
+            mdIntercomFactory.get()(response.data.error);
+          }
           ctrl.product = response.data;
           if (ctrl.product && ctrl.product.active) {
             var sku = getSku(ctrl.product, ctrl.skuId);
@@ -2070,7 +2190,7 @@ mdApp.component('mdProducts', {
                          md-content="refresh"></md-base>
               </md-cards-item-multiline-clickable>
             </md-wall>`,
-  controller: ['$scope', '$element', '$attrs', '$http',  function($scope, $element, $attrs, $http) {
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdIntercomFactory',  function($scope, $element, $attrs, $http, mdIntercomFactory) {
     var ctrl = this;
     
     var getProducts = function(products) {
@@ -2079,6 +2199,9 @@ mdApp.component('mdProducts', {
         query = '?start=' + products.data[products.data.length - 1]['id'];
       }
       $http.get('products' + query, {'cache': true}).then(function(response) {
+        if (response.data && response.data.error) {
+          mdIntercomFactory.get()(response.data.error);
+        }
         products.data.push.apply(products.data, response.data.data);
         products.has_more = response.data.has_more;
       });
@@ -2119,7 +2242,6 @@ mdApp.component('mdHome', {
               </md-app-bar>
               <md-page vertical-scroll="scroll" top="56px">
                 <md-products settings="$ctrl.settings"
-                             products="$ctrl.products"
                              on-select="$ctrl.openProduct(productId, skuId)"></md-products>
               </md-page>
             </md-full-screen>
@@ -2132,8 +2254,9 @@ mdApp.component('mdHome', {
                         product-id="$ctrl.productId"
                         sku-id="$ctrl.skuId"
                         ng-if="$ctrl.productId"
-                        on-exit="$ctrl.closeProduct()"></md-product>`,
-  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', function($scope, $element, $attrs, $http, mdCartFactory) {
+                        on-exit="$ctrl.closeProduct()"></md-product>
+            <md-brief message="$ctrl.message" ng-if="$ctrl.message" on-hide="$ctrl.eraseMessage()"></md-brief>`,
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $http, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
     ctrl.openProduct = function(productId, skuId) {
@@ -2154,7 +2277,15 @@ mdApp.component('mdHome', {
       ctrl.cartDialog = false;
     };
     
+    ctrl.eraseMessage = function() {
+      ctrl.message = false;
+    };
+    
     ctrl.$onInit = function() {
+      mdIntercomFactory.register(function(code) {ctrl.message = ctrl.settings.errors[code];});
+      ctrl.message = false;
+      ctrl.productId = false;
+      ctrl.cartDialog = false;
       $http.get('app/settings.json', {'cache': true}).then(function(response) {
         ctrl.settings = response.data;
         $http.get('app/currency.json', {'cache': true}).then(function(response) {
@@ -2164,11 +2295,12 @@ mdApp.component('mdHome', {
           ctrl.settings.countries = response.data.list;
         });
         $http.get('account', {'cache': true}).then(function(response) {
+          if (response.data && response.data.error) {
+            mdIntercomFactory.get()(response.data.error);
+          }
           ctrl.settings.account = response.data;
         });
         mdCartFactory.createCart();
-        ctrl.productId = false;
-        ctrl.cartDialog = false;
       });
     };
     

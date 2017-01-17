@@ -175,5 +175,15 @@
         "out_of_stock": "Out of stock"
       }
     }
+  },
+  "errors": {
+    "api_connection_error": "api_connection_error",
+    "api_error": "api_error",
+    "authentication_error": "Authentication error",
+    "invalid_request_error": "invalid_request_error",
+    "rate_limit_error": "rate_limit_error",
+    "existing_order": "existing_order",
+    "invalid_order": "invalid_order",
+    "unknown": "unknown"
   }
 }

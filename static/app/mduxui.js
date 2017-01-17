@@ -1064,6 +1064,25 @@ mdUXUI.directive('mdAppBar', ['mdStyle', function(mdStyle) {
   };
 }]);
 
+mdUXUI.directive('mdSnackBar', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var s = {
+        'position': 'fixed',
+        'overflow': 'hidden',
+        'background': 'rgba(0, 0, 0, 0.80)',
+        'left': '0',
+        'right': '0',
+        'bottom': '0',
+        'padding': '24px 16px',
+        'z-index': '300',
+        'box-shadow': '0px 3px 6px 1.5px rgba(0, 0, 0, 0.26)',
+      };
+      element.css(mdStyle.general(s));
+    }
+  };
+}]);
+
 mdUXUI.directive('mdActions', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
