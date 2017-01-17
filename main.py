@@ -15,7 +15,6 @@ class ViewAccount(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = memcache.get('account')
-      logging.info('get account from memcache')
       if data is None:
         account = stripe.Account.retrieve()
         data = {
@@ -29,22 +28,27 @@ class ViewAccount(webapp2.RequestHandler):
           'support_url': account.get('support_url')
         }
         memcache.set('account', data)
-        logging.info('set account to memcache')
       self.response.write(json.dumps(data))
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class ListProducts(webapp2.RequestHandler):
@@ -59,26 +63,30 @@ class ListProducts(webapp2.RequestHandler):
       }
       key = 'products%s' % self.request.get('start', '')
       data = memcache.get(key)
-      logging.info('get products from memcache using the key %s' % key)
       if data is None:
         data = stripe.Product.list(**params)
         memcache.set(key, data)
-        logging.info('set products to memcache using the key %s' % key)
       self.response.write(data)
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class ViewProduct(webapp2.RequestHandler):
@@ -87,7 +95,6 @@ class ViewProduct(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       data = memcache.get(product)
-      logging.info('get a product from memcache using the key %s' % product)
       if data is None:
         data = stripe.Product.retrieve(product)
         if (data['skus']['has_more']):
@@ -102,22 +109,27 @@ class ViewProduct(webapp2.RequestHandler):
             #has_more = (len(skus['data']) > 0)
           data['skus']['data'] = all_skus
         memcache.set(product, data)
-        logging.info('set a product to memcache using the key %s' % product)
       self.response.write(data)
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class CreateOrder(webapp2.RequestHandler):
@@ -165,6 +177,7 @@ class CreateOrder(webapp2.RequestHandler):
     try:
       params = json.loads(self.request.body)
       if (params.get('id', '')):
+        self.response.set_status(400)
         self.response.write(json.dumps({'error': 'existing_order'}))
         return
       order = {
@@ -179,21 +192,28 @@ class CreateOrder(webapp2.RequestHandler):
         data = stripe.Order.create(**order)
         self.response.write(data)
       else:
+        self.response.set_status(400)
         self.response.write(json.dumps({'error': 'invalid_order'}))
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class UpdateOrder(webapp2.RequestHandler):
@@ -214,19 +234,25 @@ class UpdateOrder(webapp2.RequestHandler):
           data = order.save()
           self.response.write(data)
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class PayOrder(webapp2.RequestHandler):
@@ -240,22 +266,27 @@ class PayOrder(webapp2.RequestHandler):
         if (order):
           data = order.pay(source=params.get('source'))
           memcache.flush_all()
-          logging.info('memcache flushed')
           self.response.write(data)
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class ViewOrder(webapp2.RequestHandler):
@@ -266,19 +297,25 @@ class ViewOrder(webapp2.RequestHandler):
       data = stripe.Order.retrieve(order)
       self.response.write(data)
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 class CreateSKUs(webapp2.RequestHandler):
@@ -306,19 +343,25 @@ class CreateSKUs(webapp2.RequestHandler):
             data.append(stripe.SKU.create(**sku))
       self.response.write(data)
     except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
     except stripe.error.APIError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_error'}))
     except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'authentication_error'}))
     except stripe.error.CardError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': e.code}))
     except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
       self.response.write(json.dumps({'error': 'rate_limit_error'}))
     except:
-      self.response.write(json.dumps({'error': 'unknown'}))
+      self.response.set_status(500)
 
 
 APP = webapp2.WSGIApplication([webapp2.Route(r'/account', handler=ViewAccount),

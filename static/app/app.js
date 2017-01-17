@@ -19,16 +19,14 @@ mdApp.run([function(){
 
 mdApp.factory('mdIntercomFactory', [function() {
   
-  var call = function() {
-    return;
+  var calls = {};
+  
+  var registerCallback = function(name, callback) {
+    calls[name] = callback;
   };
   
-  var registerCallback = function(callback) {
-    call = callback;
-  };
-  
-  var getCallback = function() {
-    return call;
+  var getCallback = function(name) {
+    return calls[name];
   };
   
   return {
@@ -38,7 +36,7 @@ mdApp.factory('mdIntercomFactory', [function() {
   
 }]);
 
-mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
+mdApp.factory('mdCartFactory', ['$http', '$cookies', 'mdIntercomFactory', function($http, $cookies, mdIntercomFactory) {
   
   var cart;
   
@@ -97,7 +95,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     $http.get('account', {'cache': true}).then(function(response) {
       var account = response.data;
       cart.currency = account.default_currency;
-    });
+    }, mdIntercomFactory.get('error'));
   };
   
   var getCart = function() {
@@ -110,7 +108,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     if (orderId) {
       $http.get('order/' + orderId, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
-      });
+      }, mdIntercomFactory.get('error'));
     }
   };
   
@@ -119,12 +117,10 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
     if (orderId) {
       var order = {'id': orderId, 'status': 'canceled'};
       $http.post('order/update', order, {'cache': true}).then(function(response) {
-        if (response.status === 200) {
-          $cookies.remove('orderId', orderId);
-          resetCart();
-          callback();
-        }
-      });
+        $cookies.remove('orderId', orderId);
+        resetCart();
+        callback();
+      }, mdIntercomFactory.get('error'));
     } else {
       resetCart();
       callback();
@@ -213,12 +209,12 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
         angular.merge(cart, response.data);
         $cookies.put('orderId', cart.id);
         callback();
-      });
+      }, mdIntercomFactory.get('error'));
     } else if (cart.id && (cart.status === 'created')) {
       $http.post('order/update', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
         callback();
-      });
+      }, mdIntercomFactory.get('error'));
     }
   };
   
@@ -234,7 +230,9 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
           cart.card = {};
           $cookies.remove('orderId');
           callback();
-        });
+        }, mdIntercomFactory.get('error'));
+      } else {
+        mdIntercomFactory.get('error')(response);
       }
     };
     if (cart.id) {
@@ -505,8 +503,7 @@ mdApp.component('mdBrief', {
     var hide_snackbar;
     ctrl.show = function() {
       ctrl.brief = ctrl.message;
-      ctrl.alive = true;
-      $timeout(function() {ctrl.onShow();}, 300);
+      $timeout(function() {ctrl.alive = true; ctrl.onShow();}, 300);
     };
     ctrl.hide = function() {
       ctrl.alive = false;
@@ -514,11 +511,11 @@ mdApp.component('mdBrief', {
     };
     ctrl.$onChanges = function(changes) {
       if (changes.message.currentValue !== changes.message.previousValue) {
-        var readingTime = ctrl.message.length * 200;
+        var readingTime = (ctrl.message.length * 200) + 2000;
         $timeout.cancel(hide_snackbar);
         ctrl.alive = false;
         show_snackbar = $timeout(ctrl.show, 0);
-        hide_snackbar = $timeout(ctrl.hide, (readingTime + 300));
+        hide_snackbar = $timeout(ctrl.hide, readingTime);
       }
     };
     ctrl.$onInit = function() {
@@ -779,6 +776,8 @@ mdApp.component('mdSelectionInput', {
                 </md-input-label>
                 <button md-button-composite
                         ng-click="$ctrl.onClick({value: $ctrl.value})"
+                        ng-disabled="$ctrl.disabled"
+                        md-disabled="{{$ctrl.disabled}}"
                         theme="tracking-dark">
                   <md-input-selection name="{{$ctrl.name}}"
                               type="text"
@@ -798,6 +797,7 @@ mdApp.component('mdSelectionInput', {
                               md-content="{{$ctrl.display}}"></md-input-selection>
                   <md-input-selection-icon
                               md-content="arrow_drop_down"
+                              md-disabled="{{$ctrl.disabled}}"
                               md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-input-selection-icon>
                 </button>
                 <md-input-helper md-content="{{$ctrl.instruction}}"
@@ -975,14 +975,14 @@ mdApp.component('mdCartButton', {
                      ng-disabled="$ctrl.disabled"
                      md-disabled="{{$ctrl.disabled}}"
                      theme="tracking-dark">
-              <md-base md-font="body2" md-misc="textCenter" md-content="{{$ctrl.name.toUpperCase()}}">
+              <md-base md-font="body2" md-misc="textCenter" md-disabled="{{$ctrl.disabled}}" md-content="{{$ctrl.name.toUpperCase()}}">
               </md-base>
               <div style="width: 0px;
                           height: 0px;
                           border-left: 72px solid transparent;
                           border-right: 72px solid transparent;
                           border-top: 36px solid rgba(0, 0, 0, 0.54);
-                          margin: auto;"></div>
+                          margin: auto;" md-disabled="{{$ctrl.disabled}}"></div>
             </button>`,
   bindings: {
     name: '<',
@@ -1605,11 +1605,15 @@ mdApp.component('mdCart', {
                 <md-actions side="left" lines="4">
                   <button md-button-icon-flat
                           md-content="arrow_back"
+                          ng-disabled="$ctrl.disabled"
+                          md-disabled="{{$ctrl.disabled}}"
                           ng-click="$ctrl.closeCart()"></button>
                 </md-actions>
                 <md-actions side="right" lines="4" ng-if="(($ctrl.step > 0) && ($ctrl.step < 6))">
                   <button md-button-icon-flat
                           md-content="delete"
+                          ng-disabled="$ctrl.disabled"
+                          md-disabled="{{$ctrl.disabled}}"
                           ng-click="$ctrl.deleteDialog = true"></button>
                 </md-actions>
               </md-app-bar>
@@ -1674,9 +1678,9 @@ mdApp.component('mdCart', {
         ctrl.cart = mdCartFactory.getCart();
       };
       
-      ctrl.disabled = true;
       ctrl.deleteDialog = false;
       if (value) {
+        ctrl.disabled = true;
         mdCartFactory.deleteCart(callback);
       }
     };
@@ -2144,9 +2148,6 @@ mdApp.component('mdProduct', {
       ctrl.attribute = false;
       if (ctrl.productId) {
         $http.get('product/' + ctrl.productId.toString(), {'cache': true}).then(function(response) {
-          if (response.data && response.data.error) {
-            mdIntercomFactory.get()(response.data.error);
-          }
           ctrl.product = response.data;
           if (ctrl.product && ctrl.product.active) {
             var sku = getSku(ctrl.product, ctrl.skuId);
@@ -2155,7 +2156,7 @@ mdApp.component('mdProduct', {
               ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
             }
           }
-        });
+        }, mdIntercomFactory.get('error'));
       }
     };
     
@@ -2199,12 +2200,9 @@ mdApp.component('mdProducts', {
         query = '?start=' + products.data[products.data.length - 1]['id'];
       }
       $http.get('products' + query, {'cache': true}).then(function(response) {
-        if (response.data && response.data.error) {
-          mdIntercomFactory.get()(response.data.error);
-        }
         products.data.push.apply(products.data, response.data.data);
         products.has_more = response.data.has_more;
-      });
+      }, mdIntercomFactory.get('error'));
     };
     
     ctrl.loadMoreProducts = function() {
@@ -2282,7 +2280,15 @@ mdApp.component('mdHome', {
     };
     
     ctrl.$onInit = function() {
-      mdIntercomFactory.register(function(code) {ctrl.message = ctrl.settings.errors[code];});
+      mdIntercomFactory.register('error', function(response) {
+        if (response.data && response.data.error && ctrl.settings.errors[response.data.error]) {
+          ctrl.message = ctrl.settings.errors[response.data.error];
+        } else if (response.status && ctrl.settings.errors[response.status.toString()]) {
+          ctrl.message = ctrl.settings.errors[response.status.toString()];
+        } else {
+          ctrl.message = ctrl.settings.errors['error'];
+        }
+      });
       ctrl.message = false;
       ctrl.productId = false;
       ctrl.cartDialog = false;
@@ -2290,18 +2296,15 @@ mdApp.component('mdHome', {
         ctrl.settings = response.data;
         $http.get('app/currency.json', {'cache': true}).then(function(response) {
           ctrl.settings.currencies = response.data;
-        });
+        }, mdIntercomFactory.get('error'));
         $http.get('app/countries.json', {'cache': true}).then(function(response) {
           ctrl.settings.countries = response.data.list;
-        });
+        }, mdIntercomFactory.get('error'));
         $http.get('account', {'cache': true}).then(function(response) {
-          if (response.data && response.data.error) {
-            mdIntercomFactory.get()(response.data.error);
-          }
           ctrl.settings.account = response.data;
-        });
+        }, mdIntercomFactory.get('error'));
         mdCartFactory.createCart();
-      });
+      }, mdIntercomFactory.get('error'));
     };
     
     ctrl.$onChanges = function(changes) {
