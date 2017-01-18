@@ -18,6 +18,7 @@ class ViewAccount(webapp2.RequestHandler):
       if data is None:
         account = stripe.Account.retrieve()
         data = {
+          'public_key': settings.stripe_public_key,
           'business_logo': account.get('business_logo'),
           'business_name': account.get('business_name'),
           'business_primary_color': account.get('business_primary_color'),
@@ -176,10 +177,6 @@ class CreateOrder(webapp2.RequestHandler):
     
     try:
       params = json.loads(self.request.body)
-      if (params.get('id', '')):
-        self.response.set_status(400)
-        self.response.write(json.dumps({'error': 'existing_order'}))
-        return
       order = {
         'currency': params.get('currency', ''),
         'email': params.get('email', ''),
@@ -192,8 +189,8 @@ class CreateOrder(webapp2.RequestHandler):
         data = stripe.Order.create(**order)
         self.response.write(data)
       else:
-        self.response.set_status(400)
-        self.response.write(json.dumps({'error': 'invalid_order'}))
+        self.response.set_status(500)
+        self.response.write(json.dumps({'error': 'invalid_request_error'}))
     except stripe.error.APIConnectionError, e:
       self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
@@ -222,17 +219,15 @@ class UpdateOrder(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       params = json.loads(self.request.body)
-      if (params.get('id', '') != ''):
-        order = stripe.Order.retrieve(params.get('id', None))
-        if (order):
-          if (params.get('selected_shipping_method', None)):
-            order['selected_shipping_method'] = params.get('selected_shipping_method')
-          if (params.get('coupon', '')):
-            order['coupon'] = params.get('coupon')
-          if ((order['status'] == 'created') and (params.get('status') == 'canceled')):
-            order['status'] = params.get('status')
-          data = order.save()
-          self.response.write(data)
+      order = stripe.Order.retrieve(params.get('id', ''))
+      if (params.get('selected_shipping_method', None)):
+        order['selected_shipping_method'] = params.get('selected_shipping_method')
+      if (params.get('coupon', '')):
+        order['coupon'] = params.get('coupon')
+      if ((order['status'] == 'created') and (params.get('status') == 'canceled')):
+        order['status'] = params.get('status')
+      data = order.save()
+      self.response.write(data)
     except stripe.error.APIConnectionError, e:
       self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))
@@ -261,12 +256,10 @@ class PayOrder(webapp2.RequestHandler):
     self.response.headers['Content-Type'] = 'application/json'
     try:
       params = json.loads(self.request.body)
-      if (params.get('id', None) and params.get('source', None)):
-        order = stripe.Order.retrieve(params.get('id', None))
-        if (order):
-          data = order.pay(source=params.get('source'))
-          memcache.flush_all()
-          self.response.write(data)
+      order = stripe.Order.retrieve(params.get('id', ''))
+      data = order.pay(source=params.get('source', ''))
+      memcache.flush_all()
+      self.response.write(data)
     except stripe.error.APIConnectionError, e:
       self.response.set_status(500)
       self.response.write(json.dumps({'error': 'api_connection_error'}))

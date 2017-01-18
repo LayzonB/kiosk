@@ -36,79 +36,80 @@ mdApp.factory('mdIntercomFactory', [function() {
   
 }]);
 
-mdApp.factory('mdCartFactory', ['$http', '$cookies', 'mdIntercomFactory', function($http, $cookies, mdIntercomFactory) {
+mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   
   var cart;
   
-  var resetCart = function() {
-    var testCart = {
-      'currency': '',
-      'coupon': '',
-      'email': 'margotrobbie@example.com',
-      'items': [{
-        'currency': 'usd',
-        'description': 'Product Name',
-        'amount': 100,
-        'parent': 'sku_9qYkc73aiaE6VG',
-        'product': 'prod_80HnnViSIO0LWc',
-        'quantity': 1,
-        'type': 'sku'
-      }],
-      'shipping': {
-        'name': 'Margot Robbie',
-        'phone': '+12223334444',
-        'address': {
-          'country': 'US',
-          'state': 'California',
-          'city': 'Beverly Hills',
-          'postal_code': '91210',
-          'line1': 'Rodeo Drive 42',
-          'line2': ''
-        }
-      },
-      'card': {},
-      'amount': '',
-      'status': 'new'
-    };
-    var newCart = {
-      'currency': '',
-      'coupon': '',
-      'email': '',
-      'items': [],
-      'shipping': {
-        'name': '',
-        'phone': '',
-        'address': {
-          'country': '',
-          'state': '',
-          'city': '',
-          'postal_code': '',
-          'line1': '',
-          'line2': ''
-        }
-      },
-      'card': {},
-      'amount': '',
-      'status': 'new'
-    };
-    cart = angular.merge({}, newCart);
+  var resetCart = function(callback) {
     $http.get('account', {'cache': true}).then(function(response) {
       var account = response.data;
-      cart.currency = account.default_currency;
-    }, mdIntercomFactory.get('error'));
+      var testCart = {
+        'currency': 'usd',
+        'coupon': '',
+        'email': 'margotrobbie@example.com',
+        'items': [{
+          'currency': 'usd',
+          'description': 'Product Name',
+          'amount': 100,
+          'parent': 'sku_9qYkc73aiaE6VG',
+          'product': 'prod_80HnnViSIO0LWc',
+          'quantity': 1,
+          'type': 'sku'
+        }],
+        'shipping': {
+          'name': 'Margot Robbie',
+          'phone': '+12223334444',
+          'address': {
+            'country': 'US',
+            'state': 'California',
+            'city': 'Beverly Hills',
+            'postal_code': '91210',
+            'line1': 'Rodeo Drive 42',
+            'line2': 'Apartment 007'
+          }
+        },
+        'card': {},
+        'amount': '',
+        'status': 'new'
+      };
+      var newCart = {
+        'currency': account.default_currency,
+        'coupon': '',
+        'email': '',
+        'items': [],
+        'shipping': {
+          'name': '',
+          'phone': '',
+          'address': {
+            'country': '',
+            'state': '',
+            'city': '',
+            'postal_code': '',
+            'line1': '',
+            'line2': ''
+          }
+        },
+        'card': {},
+        'amount': '',
+        'status': 'new'
+      };
+      cart = angular.merge({}, newCart);
+      callback(response);
+    }, callback);
   };
   
   var getCart = function() {
     return cart;
   };
   
-  var createCart = function() {
-    resetCart();
+  var createCart = function(callback) {
     var orderId = $cookies.get('orderId');
     if (orderId) {
       $http.get('order/' + orderId, {'cache': true}).then(function(response) {
-        angular.merge(cart, response.data);
-      }, mdIntercomFactory.get('error'));
+        resetCart(function(res) {angular.merge(cart, response.data); callback(res);});
+      }, callback);
+    } else {
+      resetCart(callback);
     }
   };
   
@@ -118,12 +119,10 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', 'mdIntercomFactory', functi
       var order = {'id': orderId, 'status': 'canceled'};
       $http.post('order/update', order, {'cache': true}).then(function(response) {
         $cookies.remove('orderId', orderId);
-        resetCart();
-        callback();
-      }, mdIntercomFactory.get('error'));
+        resetCart(callback);
+      }, callback);
     } else {
-      resetCart();
-      callback();
+      resetCart(callback);
     }
   };
   
@@ -208,13 +207,13 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', 'mdIntercomFactory', functi
       $http.post('order/create', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
         $cookies.put('orderId', cart.id);
-        callback();
-      }, mdIntercomFactory.get('error'));
+        callback(response);
+      }, callback);
     } else if (cart.id && (cart.status === 'created')) {
       $http.post('order/update', cart, {'cache': true}).then(function(response) {
         angular.merge(cart, response.data);
-        callback();
-      }, mdIntercomFactory.get('error'));
+        callback(response);
+      }, callback);
     }
   };
   
@@ -229,10 +228,15 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', 'mdIntercomFactory', functi
           angular.merge(cart, response.data);
           cart.card = {};
           $cookies.remove('orderId');
-          callback();
-        }, mdIntercomFactory.get('error'));
+          callback(response);
+        }, callback);
       } else {
-        mdIntercomFactory.get('error')(response);
+        if (response.error && response.error.type && response.error.type === 'card_error') {
+          callback({'data': {'error': response.error.code}, 'status': status});
+        } else {
+          callback({'data': response, 'status': status});
+        }
+        
       }
     };
     if (cart.id) {
@@ -1665,7 +1669,7 @@ mdApp.component('mdCart', {
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
                                on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
-  controller: ['$scope', '$element', '$attrs', 'mdCartFactory', function($scope, $element, $attrs, mdCartFactory) {
+  controller: ['$scope', '$element', '$attrs', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
     ctrl.closeCart = function() {
@@ -1673,15 +1677,14 @@ mdApp.component('mdCart', {
     };
     
     ctrl.deleteCart = function(value) {
-      var callback = function() {
-        ctrl.disabled = false;
-        ctrl.cart = mdCartFactory.getCart();
-      };
-      
       ctrl.deleteDialog = false;
       if (value) {
         ctrl.disabled = true;
-        mdCartFactory.deleteCart(callback);
+        mdCartFactory.deleteCart(function(response) {
+          ctrl.disabled = false;
+          ctrl.cart = mdCartFactory.getCart();
+          mdIntercomFactory.get('error')(response);
+        });
       }
     };
     
@@ -1707,25 +1710,27 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepThree = function() {
-      var callback = function() {
-        ctrl.step = 3;
-        ctrl.disabled = false;
-        ctrl.cart = mdCartFactory.getCart();
-      };
-      
       ctrl.disabled = true;
-      mdCartFactory.saveCart(callback);
+      mdCartFactory.saveCart(function(response) {
+        if ((response.status > 199) && (response.status < 300)) {
+          ctrl.cart = mdCartFactory.getCart();
+          ctrl.step = 3;
+        }
+        ctrl.disabled = false;
+        mdIntercomFactory.get('error')(response);
+      });
     };
     
     ctrl.stepFour = function() {
-      var callback = function() {
-        ctrl.step = 4;
-        ctrl.disabled = false;
-        ctrl.cart = mdCartFactory.getCart();
-      };
-      
       ctrl.disabled = true;
-      mdCartFactory.saveCart(callback);
+      mdCartFactory.saveCart(function(response) {
+        if ((response.status > 199) && (response.status < 300)) {
+          ctrl.cart = mdCartFactory.getCart();
+          ctrl.step = 4;
+        }
+        ctrl.disabled = false;
+        mdIntercomFactory.get('error')(response);
+      });
     };
     
     ctrl.stepFive = function() {
@@ -1733,16 +1738,19 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepSix = function() {
-      var callback = function() {
-        ctrl.step = 6;
-        ctrl.disabled = false;
-        ctrl.order = mdCartFactory.getCart();
-        mdCartFactory.createCart();
-        ctrl.cart = mdCartFactory.getCart();
-      };
-      
       ctrl.disabled = true;
-      mdCartFactory.payCart(callback);
+      mdCartFactory.payCart(function(response) {
+        if ((response.status > 199) && (response.status < 300)) {
+          ctrl.order = mdCartFactory.getCart();
+          mdCartFactory.createCart(function(response) {
+            mdIntercomFactory.get('error')(response);
+          });
+          ctrl.cart = mdCartFactory.getCart();
+          ctrl.step = 6;
+        }
+        ctrl.disabled = false;
+        mdIntercomFactory.get('error')(response);
+      });
     };
     
     ctrl.$onInit = function() {
@@ -2285,8 +2293,6 @@ mdApp.component('mdHome', {
           ctrl.message = ctrl.settings.errors[response.data.error];
         } else if (response.status && ctrl.settings.errors[response.status.toString()]) {
           ctrl.message = ctrl.settings.errors[response.status.toString()];
-        } else {
-          ctrl.message = ctrl.settings.errors['error'];
         }
       });
       ctrl.message = false;
@@ -2303,7 +2309,9 @@ mdApp.component('mdHome', {
         $http.get('account', {'cache': true}).then(function(response) {
           ctrl.settings.account = response.data;
         }, mdIntercomFactory.get('error'));
-        mdCartFactory.createCart();
+        mdCartFactory.createCart(function(response) {
+          mdIntercomFactory.get('error')(response);
+        });
       }, mdIntercomFactory.get('error'));
     };
     
@@ -2321,7 +2329,7 @@ mdApp.controller('AppController', ['$scope', '$http', function($scope, $http) {
     $scope.settings = response.data;
     $http.get('account', {'cache': true}).then(function(response) {
       $scope.settings.account = response.data;
-      Stripe.setPublishableKey($scope.settings.stripePublishableKey);
+      Stripe.setPublishableKey($scope.settings.account.public_key);
     });
   });
   
