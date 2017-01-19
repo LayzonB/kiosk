@@ -1088,7 +1088,7 @@ mdApp.component('mdCartCountries', {
                     <md-list-cell>
                       <md-list-cell-tile>
                           <md-action side="center">
-                            <md-base md-pad="12"
+                            <md-base md-pad="4"
                                      md-icon="avatar"
                                      md-content="refresh"></md-base>
                           </md-action>
@@ -1669,7 +1669,7 @@ mdApp.component('mdCart', {
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
                                on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
-  controller: ['$scope', '$element', '$attrs', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, mdCartFactory, mdIntercomFactory) {
+  controller: ['$scope', '$element', '$attrs', '$timeout', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $timeout, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
     ctrl.closeCart = function() {
@@ -1706,7 +1706,7 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepTwo = function() {
-      ctrl.step = 2;
+      $timeout(function() {ctrl.step = 2;}, 0);
     };
     
     ctrl.stepThree = function() {
@@ -1714,7 +1714,7 @@ mdApp.component('mdCart', {
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           ctrl.cart = mdCartFactory.getCart();
-          ctrl.step = 3;
+          $timeout(function() {ctrl.step = 3;}, 0);
         }
         ctrl.disabled = false;
         mdIntercomFactory.get('error')(response);
@@ -1726,7 +1726,7 @@ mdApp.component('mdCart', {
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           ctrl.cart = mdCartFactory.getCart();
-          ctrl.step = 4;
+          $timeout(function() {ctrl.step = 4;}, 0);
         }
         ctrl.disabled = false;
         mdIntercomFactory.get('error')(response);
@@ -1734,7 +1734,7 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepFive = function() {
-      ctrl.step = 5;
+      $timeout(function() {ctrl.step = 5;}, 0);
     };
     
     ctrl.stepSix = function() {
@@ -1746,7 +1746,7 @@ mdApp.component('mdCart', {
             mdIntercomFactory.get('error')(response);
           });
           ctrl.cart = mdCartFactory.getCart();
-          ctrl.step = 6;
+          $timeout(function() {ctrl.step = 6;}, 0);
         }
         ctrl.disabled = false;
         mdIntercomFactory.get('error')(response);

@@ -311,6 +311,74 @@ class ViewOrder(webapp2.RequestHandler):
       self.response.set_status(500)
 
 
+class CreateProducts(webapp2.RequestHandler):
+
+  def get(self):
+    self.response.headers['Content-Type'] = 'application/json'
+    try:
+      products = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 
+                  'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 
+                  'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+      data = []
+      for product in products:
+        data.append(stripe.Product.create(name=product))
+      self.response.write(data)
+    except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'api_connection_error'}))
+    except stripe.error.APIError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'api_error'}))
+    except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'authentication_error'}))
+    except stripe.error.CardError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': e.code}))
+    except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'invalid_request_error'}))
+    except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'rate_limit_error'}))
+    except:
+      self.response.set_status(500)
+
+
+class DeleteProducts(webapp2.RequestHandler):
+
+  def get(self):
+    self.response.headers['Content-Type'] = 'application/json'
+    try:
+      data = []
+      products = stripe.Product.list(limit=100)
+      for product in products:
+        if (not product['skus']['data']):
+          data.append(product)
+          product.delete()
+      self.response.write(data)
+    except stripe.error.APIConnectionError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'api_connection_error'}))
+    except stripe.error.APIError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'api_error'}))
+    except stripe.error.AuthenticationError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'authentication_error'}))
+    except stripe.error.CardError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': e.code}))
+    except stripe.error.InvalidRequestError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'invalid_request_error'}))
+    except stripe.error.RateLimitError, e:
+      self.response.set_status(500)
+      self.response.write(json.dumps({'error': 'rate_limit_error'}))
+    except:
+      self.response.set_status(500)
+
+
 class CreateSKUs(webapp2.RequestHandler):
 
   def get(self):
@@ -323,15 +391,15 @@ class CreateSKUs(webapp2.RequestHandler):
       sku['currency'] = 'usd'
       sku['inventory'] = {'type': 'finite', 'quantity': '1'}
       sizes = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL']
-      colors = ['Black', 'Beige', 'Pink', 'Orange', 'Silver', 'Purple', 'Gray', 'Burgundy']
+      colors = ['White', 'Red', 'Green', 'Blue', 'Black']
       fabrics = ['Silk', 'Cotton', 'Polyester']
       attributes = {}
       for size in sizes:
-        attributes['size'] = size
+        attributes['Size'] = size
         for color in colors:
-          attributes['color'] = color
+          attributes['Color'] = color
           for fabric in fabrics:
-            attributes['fabric'] = fabric
+            attributes['Fabric'] = fabric
             sku['attributes'] = attributes
             data.append(stripe.SKU.create(**sku))
       self.response.write(data)
@@ -363,5 +431,7 @@ APP = webapp2.WSGIApplication([webapp2.Route(r'/account', handler=ViewAccount),
                               webapp2.Route(r'/order/create', handler=CreateOrder),
                               webapp2.Route(r'/order/update', handler=UpdateOrder),
                               webapp2.Route(r'/order/pay', handler=PayOrder),
-                              webapp2.Route(r'/order/<order:(.*)>', handler=ViewOrder)],
+                              webapp2.Route(r'/order/<order:(.*)>', handler=ViewOrder),
+                              webapp2.Route(r'/products/create', handler=CreateProducts),
+                              webapp2.Route(r'/products/delete', handler=DeleteProducts)],
                               debug=True)
