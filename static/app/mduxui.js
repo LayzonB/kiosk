@@ -548,7 +548,7 @@ mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle
   };
 }]);
 
-mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
+mdUXUI.directive('mdInputLabel', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var s = {

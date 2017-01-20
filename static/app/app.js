@@ -99,7 +99,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   };
   
   var getCart = function() {
-    return cart;
+    return angular.merge({}, cart);
   };
   
   var createCart = function(callback) {
@@ -471,7 +471,7 @@ mdApp.component('mdConfirmation', {
 mdApp.component('mdAppLogo', {
   template: `<md-base>
               <md-action side="center">
-                <img md-base md-pad="16"
+                <img md-base
                      ng-src="{{$ctrl.imgSrc}}"
                      alt="{{$ctrl.imgAlt}}"
                      width="{{$ctrl.imgWidth}}"
@@ -1669,11 +1669,12 @@ mdApp.component('mdCart', {
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
                                on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
-  controller: ['$scope', '$element', '$attrs', '$timeout', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $timeout, mdCartFactory, mdIntercomFactory) {
+  controller: ['$scope', '$element', '$attrs', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
     ctrl.closeCart = function() {
       ctrl.dialog = false;
+      ctrl.order = {};
     };
     
     ctrl.deleteCart = function(value) {
@@ -1706,15 +1707,15 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepTwo = function() {
-      $timeout(function() {ctrl.step = 2;}, 0);
+      ctrl.step = 2;
     };
     
     ctrl.stepThree = function() {
       ctrl.disabled = true;
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
+          ctrl.step = 3;
           ctrl.cart = mdCartFactory.getCart();
-          $timeout(function() {ctrl.step = 3;}, 0);
         }
         ctrl.disabled = false;
         mdIntercomFactory.get('error')(response);
@@ -1725,8 +1726,8 @@ mdApp.component('mdCart', {
       ctrl.disabled = true;
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
+          ctrl.step = 4;
           ctrl.cart = mdCartFactory.getCart();
-          $timeout(function() {ctrl.step = 4;}, 0);
         }
         ctrl.disabled = false;
         mdIntercomFactory.get('error')(response);
@@ -1734,7 +1735,7 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepFive = function() {
-      $timeout(function() {ctrl.step = 5;}, 0);
+      ctrl.step = 5;
     };
     
     ctrl.stepSix = function() {
@@ -1745,8 +1746,8 @@ mdApp.component('mdCart', {
           mdCartFactory.createCart(function(response) {
             mdIntercomFactory.get('error')(response);
           });
+          ctrl.step = 6;
           ctrl.cart = mdCartFactory.getCart();
-          $timeout(function() {ctrl.step = 6;}, 0);
         }
         ctrl.disabled = false;
         mdIntercomFactory.get('error')(response);
@@ -1770,6 +1771,7 @@ mdApp.component('mdCart', {
       } else if (ctrl.cart.status === 'paid') {
         ctrl.step = 6;
       }
+      ctrl.order = {};
       ctrl.disabled = false;
       ctrl.dialog = true;
       ctrl.deleteDialog = false;
@@ -2237,8 +2239,8 @@ mdApp.component('mdProducts', {
 mdApp.component('mdHome', {
   template: `<md-full-screen>
               <md-app-bar>
-                <md-app-logo img-width="'24px'"
-                             img-height="'24px'"
+                <md-app-logo img-width="'56px'"
+                             img-height="'56px'"
                              img-src="$ctrl.settings.account.business_logo"
                              img-alt="$ctrl.settings.account.business_name">
                 </md-app-logo>
