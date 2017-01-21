@@ -9,27 +9,75 @@
           "ok": "Empty"
         }
       },
-      "steps": {
-        "zero": "Cart empty",
-        "one": "Proceed to Checkout",
-        "two": "Select Shipping Method",
-        "three": "Review Cart",
-        "four": "Pay",
-        "five": "Pay"
+      "empty": {
+        "action": "Cart empty"
       },
-      "email": {
-        "label": "Email",
-        "instructions": {
-          "info": "Recipient's email address.",
-          "required": "This field requires \"text\" value!",
-          "minlength": "",
-          "maxlength": "",
-          "pattern": "Please type in a valid email address.",
-          "email": "Please type in a valid email address."
-        }
+      "products": {
+        "note": "Taxes will be calculated upon payment.",
+        "action": "Checkout"
       },
       "shipping": {
         "label": "Shipping address",
+        "country": {
+          "label": "Country",
+          "instructions": {
+            "info": "",
+            "required": "This field requires \"selection\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "state": {
+          "label": "Region",
+          "instructions": {
+            "info": "",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "city": {
+          "label": "City",
+          "instructions": {
+            "info": "",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "postal_code": {
+          "label": "Postal code",
+          "instructions": {
+            "info": "",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "line1": {
+          "label": "Street",
+          "instructions": {
+            "info": "",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
+        "line2": {
+          "label": "Street (optional)",
+          "instructions": {
+            "info": "",
+            "required": "",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": ""
+          }
+        },
         "name": {
           "label": "Name",
           "instructions": {
@@ -38,6 +86,16 @@
             "minlength": "",
             "maxlength": "",
             "pattern": ""
+          }
+        },
+        "email": {
+          "label": "Email",
+          "instructions": {
+            "info": "Recipient's email address.",
+            "required": "This field requires \"text\" value!",
+            "minlength": "",
+            "maxlength": "",
+            "pattern": "Please type in a valid email address."
           }
         },
         "phone": {
@@ -50,73 +108,13 @@
             "pattern": "Please type in a valid phone number."
           }
         },
-        "address": {
-          "country": {
-            "label": "Country",
-            "instructions": {
-              "info": "",
-              "required": "This field requires \"selection\" value!",
-              "minlength": "",
-              "maxlength": "",
-              "pattern": ""
-            }
-          },
-          "state": {
-            "label": "Region",
-            "instructions": {
-              "info": "",
-              "required": "This field requires \"text\" value!",
-              "minlength": "",
-              "maxlength": "",
-              "pattern": ""
-            }
-          },
-          "city": {
-            "label": "City",
-            "instructions": {
-              "info": "",
-              "required": "This field requires \"text\" value!",
-              "minlength": "",
-              "maxlength": "",
-              "pattern": ""
-            }
-          },
-          "postal_code": {
-            "label": "Postal code",
-            "instructions": {
-              "info": "",
-              "required": "This field requires \"text\" value!",
-              "minlength": "",
-              "maxlength": "",
-              "pattern": ""
-            }
-          },
-          "line1": {
-            "label": "Street",
-            "instructions": {
-              "info": "",
-              "required": "This field requires \"text\" value!",
-              "minlength": "",
-              "maxlength": "",
-              "pattern": ""
-            }
-          },
-          "line2": {
-            "label": "Street (optional)",
-            "instructions": {
-              "info": "",
-              "required": "",
-              "minlength": "",
-              "maxlength": "",
-              "pattern": ""
-            }
-          }
-        }
+        "action": "Select Shipping Method"
       },
       "shipping_methods": {
-        "label": "Shipping methods"
+        "label": "Shipping methods",
+        "action": "Payment Details"
       },
-      "card": {
+      "pay": {
         "number": {
           "label": "Card number",
           "instructions": {
@@ -124,7 +122,8 @@
             "required": "This field requires \"text\" value!",
             "minlength": "",
             "maxlength": "",
-            "pattern": ""
+            "pattern": "",
+            "mdCustomValidator": "Invalid card number!"
           }
         },
         "exp_month": {
@@ -132,9 +131,10 @@
           "instructions": {
             "info": "Card expiration printed on the front of your card.",
             "required": "This field requires \"text\" value!",
-            "minlength": "",
-            "maxlength": "",
-            "pattern": ""
+            "minlength": "This field accepts minimum two digits!",
+            "maxlength": "This field accepts maximum two digits!",
+            "pattern": "",
+            "mdCustomValidator": "Invalid expiration month!"
           }
         },
         "exp_year": {
@@ -142,9 +142,10 @@
           "instructions": {
             "info": "Card expiration printed on the front of your card.",
             "required": "This field requires \"text\" value!",
-            "minlength": "",
-            "maxlength": "",
-            "pattern": ""
+            "minlength": "This field accepts minimum two digits!",
+            "maxlength": "This field accepts maximum four digits!",
+            "pattern": "",
+            "mdCustomValidator": "Invalid expiration year!"
           }
         },
         "cvc": {
@@ -152,19 +153,16 @@
           "instructions": {
             "info": "Card verification code printed on the back of your card.",
             "required": "This field requires \"text\" value!",
-            "minlength": "",
-            "maxlength": "",
-            "pattern": ""
+            "minlength": "This field accepts minimum three digits!",
+            "maxlength": "This field accepts maximum three digits!",
+            "pattern": "",
+            "mdCustomValidator": "Invalid cvc!"
           }
-        }
+        },
+        "action": "Pay"
       },
-      "status": {
-        "new": "New",
-        "created": "Created",
-        "paid": "Paid",
-        "canceled": "Canceled",
-        "fulfilled": "Fulfilled",
-        "returned": "Returned"
+      "end": {
+        "note": "You will shortly receive the invoice and shipment tracking on your email. Thank you for shopping with us!"
       }
     },
     "product": {

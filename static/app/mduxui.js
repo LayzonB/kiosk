@@ -1018,7 +1018,7 @@ mdUXUI.directive('mdConfirmationSheet', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdPage', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdPage', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var s = {};
@@ -1037,6 +1037,7 @@ mdUXUI.directive('mdPage', ['mdStyle', function(mdStyle) {
       element.css(mdStyle.page(s));
       attrs.$observe('position', function(value) {
         element.css({'transform': 'translate(0%, ' + value.toString() + '%)'});
+        //$timeout(function() {}, 0);
       });
     }
   };

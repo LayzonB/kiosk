@@ -99,7 +99,7 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   };
   
   var getCart = function() {
-    return angular.merge({}, cart);
+    return cart;
   };
   
   var createCart = function(callback) {
@@ -689,6 +689,22 @@ mdApp.component('mdListItemClickable', {
   }
 });
 
+mdApp.directive('mdCustomValidator', [function() {
+  return {
+    scope: {
+      mdCustomValidator: '&'
+    },
+    require: 'ngModel',
+    link: function(scope, element, attrs, ctrl) {
+      if (scope.mdCustomValidator()) {
+        ctrl.$validators.mdCustomValidator = scope.mdCustomValidator();
+      } else {
+        ctrl.$validators.mdCustomValidator = function(modelValue, viewValue) {return true};
+      }
+    }
+  };
+}]);
+
 mdApp.component('mdTextInput', {
   template: `<md-list-cell>
               <md-list-cell-tile>
@@ -704,7 +720,7 @@ mdApp.component('mdTextInput', {
                        ng-blur="$ctrl.blur()"
                        ng-focus="$ctrl.focus()"
                        ng-model="$ctrl.value"
-                       ng-model-options="{allowInvalid: false}"
+                       ng-model-options="$ctrl.options"
                        ng-disabled="$ctrl.disabled"
                        md-disabled="{{$ctrl.disabled}}"
                        ng-required="$ctrl.required"
@@ -712,6 +728,7 @@ mdApp.component('mdTextInput', {
                        ng-minlength="$ctrl.minlength"
                        ng-maxlength="$ctrl.maxlength"
                        ng-pattern="$ctrl.pattern"
+                       md-custom-validator="$ctrl.custom"
                        ng-change="$ctrl.onChange({name: $ctrl.name, value: $ctrl.value})">
                 <md-input-helper md-content="{{$ctrl.instruction}}"
                                  md-disabled="{{$ctrl.disabled}}"
@@ -765,6 +782,8 @@ mdApp.component('mdTextInput', {
     minlength: '<',
     maxlength: '<',
     pattern: '<',
+    custom: '<',
+    options: '<',
     instructions: '<',
     disabled: '<'
   }
@@ -974,20 +993,16 @@ mdApp.component('mdForm', {
 /*--------------------------------------------------Composites--------------------------------------------------*/
 
 mdApp.component('mdCartButton', {
-  template: `<button md-button-composite md-pad="16"
-                     ng-click="$ctrl.onClick({value: $ctrl.value})"
-                     ng-disabled="$ctrl.disabled"
-                     md-disabled="{{$ctrl.disabled}}"
-                     theme="tracking-dark">
-              <md-base md-font="body2" md-misc="textCenter" md-disabled="{{$ctrl.disabled}}" md-content="{{$ctrl.name.toUpperCase()}}">
-              </md-base>
-              <div style="width: 0px;
-                          height: 0px;
-                          border-left: 72px solid transparent;
-                          border-right: 72px solid transparent;
-                          border-top: 36px solid rgba(0, 0, 0, 0.54);
-                          margin: auto;" md-disabled="{{$ctrl.disabled}}"></div>
-            </button>`,
+  template: `<md-list-item-multiline>
+              <md-action side="center">
+                <button md-button-text-raised
+                        md-raised="{{!$ctrl.disabled}}"
+                        ng-disabled="$ctrl.disabled"
+                        md-disabled="{{$ctrl.disabled}}"
+                        md-content="{{$ctrl.name}}"
+                        ng-click="$ctrl.onClick({value: $ctrl.value})"></button>
+              </md-action>
+            </md-list-item-multiline>`,
   bindings: {
     name: '<',
     value: '<',
@@ -1144,11 +1159,15 @@ mdApp.component('mdCartSummary', {
                          md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></md-base>
                 <md-base md-font="secondary" ng-if="$ctrl.cart.id"
                          md-content="{{$ctrl.cart.id}}"></md-base>
+                <md-base md-font="notification" ng-if="$ctrl.note"
+                         md-pad="16,0,0,0"
+                         md-content="{{$ctrl.note}}"></md-base>
               </md-base>
             </md-cards-item-multiline>`,
   bindings: {
     settings: '<',
-    cart: '<'
+    cart: '<',
+    note: '<'
   }
 });
 
@@ -1289,7 +1308,7 @@ mdApp.component('mdCartEmpty', {
   template: `<md-cart-page page="-1" current-page="$ctrl.step">
               <md-list>
                 <md-list-item-multiline>
-                  <md-base md-font="display1" md-misc="textCenter" md-pad="0,24" md-content="{{$ctrl.settings.modals.cart.steps.zero}}">
+                  <md-base md-font="display1" md-misc="textCenter" md-pad="0,24" md-content="{{$ctrl.settings.modals.cart.empty.action}}">
                   </md-base>
                 </md-list-item-multiline>
               </md-list>
@@ -1309,11 +1328,13 @@ mdApp.component('mdCartProducts', {
                                         on-click="$ctrl.onSelect({productId: productId, skuId: skuId})">
                 </md-cart-item-clickable>
                 <md-cart-summary settings="$ctrl.settings"
-                                 cart="$ctrl.cart">
+                                 cart="$ctrl.cart"
+                                 note="$ctrl.settings.modals.cart.products.note">
                 </md-cart-summary>
+                <md-cart-button name="$ctrl.settings.modals.cart.products.action"
+                                disabled="$ctrl.disabled"
+                                on-click="$ctrl.onSubmit()"></md-cart-button>
               </md-cards>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.one"
-                              on-click="$ctrl.onSubmit()"></md-cart-button>
             </md-cart-page>`,
   bindings: {
     settings: '<',
@@ -1333,8 +1354,8 @@ mdApp.component('mdCartShipping', {
                                       required="true"
                                       trim="true"
                                       disabled="$ctrl.disabled"
-                                      label="$ctrl.settings.modals.cart.shipping.address.country.label"
-                                      instructions="$ctrl.settings.modals.cart.shipping.address.country.instructions"
+                                      label="$ctrl.settings.modals.cart.shipping.country.label"
+                                      instructions="$ctrl.settings.modals.cart.shipping.country.instructions"
                                       value="$ctrl.cart.shipping.address.country"
                                       display="$ctrl.cart.shipping.address.country | formatCountry:$ctrl.settings.countries"
                                       on-click="$ctrl.onOpenCountries({value: value})"></md-selection-input>
@@ -1342,40 +1363,40 @@ mdApp.component('mdCartShipping', {
                                  required="true"
                                  trim="true"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.shipping.address.state.label"
-                                 instructions="$ctrl.settings.modals.cart.shipping.address.state.instructions"
+                                 label="$ctrl.settings.modals.cart.shipping.state.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.state.instructions"
                                  value="$ctrl.cart.shipping.address.state"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'city'"
                                  required="true"
                                  trim="true"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.shipping.address.city.label"
-                                 instructions="$ctrl.settings.modals.cart.shipping.address.city.instructions"
+                                 label="$ctrl.settings.modals.cart.shipping.city.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.city.instructions"
                                  value="$ctrl.cart.shipping.address.city"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'postal_code'"
                                  required="true"
                                  trim="true"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.shipping.address.postal_code.label"
-                                 instructions="$ctrl.settings.modals.cart.shipping.address.postal_code.instructions"
+                                 label="$ctrl.settings.modals.cart.shipping.postal_code.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.postal_code.instructions"
                                  value="$ctrl.cart.shipping.address.postal_code"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'line1'"
                                  required="true"
                                  trim="true"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.shipping.address.line1.label"
-                                 instructions="$ctrl.settings.modals.cart.shipping.address.line1.instructions"
+                                 label="$ctrl.settings.modals.cart.shipping.line1.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.line1.instructions"
                                  value="$ctrl.cart.shipping.address.line1"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'line2'"
                                  required="false"
                                  trim="true"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.shipping.address.line2.label"
-                                 instructions="$ctrl.settings.modals.cart.shipping.address.line2.instructions"
+                                 label="$ctrl.settings.modals.cart.shipping.line2.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.line2.instructions"
                                  value="$ctrl.cart.shipping.address.line2"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'name'"
@@ -1389,32 +1410,34 @@ mdApp.component('mdCartShipping', {
                   <md-text-input name="'email'"
                                  required="true"
                                  trim="true"
-                                 disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.email.label"
-                                 instructions="$ctrl.settings.modals.cart.email.instructions"
-                                 value="$ctrl.cart.email"
                                  pattern="$ctrl.validEmail"
+                                 options="{updateOn: 'blur'}"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.email.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.email.instructions"
+                                 value="$ctrl.cart.email"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'phone'"
                                  required="true"
                                  trim="true"
+                                 pattern="$ctrl.validPhone"
                                  disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.shipping.phone.label"
                                  instructions="$ctrl.settings.modals.cart.shipping.phone.instructions"
                                  value="$ctrl.cart.shipping.phone"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-cart-button name="$ctrl.settings.modals.cart.shipping.action"
+                                  disabled="$ctrl.disabled"
+                                  on-click="$ctrl.submit()"></md-cart-button>
                 </md-form>
               </md-list>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.two"
-                              disabled="$ctrl.disabled"
-                              on-click="$ctrl.submit()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
     ctrl.validEmail = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
     
-    ctrl.validPhone = /^\+?([0-9]{2})\)?[-. ]?([0-9]{4})[-. ]?([0-9]{4})$/;
+    ctrl.validPhone = /^\+{0,1}[0-9]+$/;
     
     ctrl.register = function(validator) {
       ctrl.validate = validator;
@@ -1450,11 +1473,11 @@ mdApp.component('mdCartShippingMethods', {
                                   second="item.description"
                                   disabled="$ctrl.disabled"
                                   on-select="$ctrl.onUpdate({name: name, value: value})"></md-radio-input>
+                  <md-cart-button name="$ctrl.settings.modals.cart.shipping_methods.action"
+                                  disabled="$ctrl.disabled"
+                                  on-click="$ctrl.submit()"></md-cart-button>
                 </md-form>
               </md-list>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.three"
-                              disabled="$ctrl.disabled"
-                              on-click="$ctrl.submit()"></md-cart-button>
             </md-cart-page>`,
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
@@ -1479,77 +1502,55 @@ mdApp.component('mdCartShippingMethods', {
   }
 });
 
-mdApp.component('mdCartReview', {
-  template: `<md-cart-page page="4" current-page="$ctrl.step">
-              <md-cards>
-                <md-cart-shipping-address settings="$ctrl.settings"
-                                          cart="$ctrl.cart">
-                </md-cart-shipping-address>
-                <md-cart-item-view ng-repeat="item in $ctrl.cart.items"
-                                   value="item"
-                                   settings="$ctrl.settings">
-                </md-cart-item-view>
-                <md-cart-summary settings="$ctrl.settings"
-                                 cart="$ctrl.cart">
-                </md-cart-summary>
-              </md-cards>
-              <md-cart-button name="$ctrl.settings.modals.cart.steps.four"
-                              on-click="$ctrl.onSubmit()"></md-cart-button>
-            </md-cart-page>`,
-  bindings: {
-    settings: '<',
-    cart: '<',
-    step: '<',
-    onSubmit: '&'
-  }
-});
-
 mdApp.component('mdCartPay', {
-  template: `<md-cart-page page="5" current-page="$ctrl.step">
+  template: `<md-cart-page page="4" current-page="$ctrl.step">
               <md-list>
                 <md-form name="'cartPaymentForm'" on-init="$ctrl.register(validator)">
                   <md-text-input name="'number'"
                                  required="true"
                                  trim="true"
+                                 custom="$ctrl.validateCardNumber"
+                                 options="{updateOn: 'blur'}"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.card.number.label"
-                                 instructions="$ctrl.settings.modals.cart.card.number.instructions"
+                                 label="$ctrl.settings.modals.cart.pay.number.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.number.instructions"
                                  value="$ctrl.cart.card.number"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'exp_month'"
                                  required="true"
                                  trim="true"
+                                 minlength="2"
+                                 maxlength="2"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.card.exp_month.label"
-                                 instructions="$ctrl.settings.modals.cart.card.exp_month.instructions"
+                                 label="$ctrl.settings.modals.cart.pay.exp_month.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.exp_month.instructions"
                                  value="$ctrl.cart.card.exp_month"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'exp_year'"
                                  required="true"
                                  trim="true"
+                                 minlength="2"
+                                 maxlength="4"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.card.exp_year.label"
-                                 instructions="$ctrl.settings.modals.cart.card.exp_year.instructions"
+                                 label="$ctrl.settings.modals.cart.pay.exp_year.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.exp_year.instructions"
                                  value="$ctrl.cart.card.exp_year"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
                   <md-text-input name="'cvc'"
                                  required="true"
                                  trim="true"
+                                 minlength="3"
+                                 maxlength="3"
+                                 custom="$ctrl.validateCVC"
+                                 options="{updateOn: 'blur'}"
                                  disabled="$ctrl.disabled"
-                                 label="$ctrl.settings.modals.cart.card.cvc.label"
-                                 instructions="$ctrl.settings.modals.cart.card.cvc.instructions"
+                                 label="$ctrl.settings.modals.cart.pay.cvc.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.cvc.instructions"
                                  value="$ctrl.cart.card.cvc"
                                  on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
-                  <md-list-item-multiline>
-                    <md-action side="center">
-                      <button md-button-text-raised
-                              md-raised="{{!$ctrl.disabled}}"
-                              ng-disabled="$ctrl.disabled"
-                              md-disabled="{{$ctrl.disabled}}"
-                              md-content="{{$ctrl.settings.modals.cart.steps.five + ' ' + ($ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()])}}"
-                              ng-click="$ctrl.submit()"></button>
-                    </md-action>
-                  </md-list-item-multiline>
+                  <md-cart-button name="$ctrl.settings.modals.cart.pay.action + ' ' + ($ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()])"
+                                  disabled="$ctrl.disabled"
+                                  on-click="$ctrl.submit()"></md-cart-button>
                 </md-form>
               </md-list>
             </md-cart-page>`,
@@ -1559,6 +1560,18 @@ mdApp.component('mdCartPay', {
     ctrl.validEmail = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
     
     ctrl.validPhone = /^\+?([0-9]{2})\)?[-. ]?([0-9]{4})[-. ]?([0-9]{4})$/;
+    
+    ctrl.validateCardNumber = function(modelValue, viewValue) {
+      return Stripe.card.validateCardNumber(modelValue);
+    };
+    
+    ctrl.validateExpiry = function(modelValue, viewValue) {
+      return Stripe.card.validateExpiry(modelValue);
+    };
+    
+    ctrl.validateCVC = function(modelValue, viewValue) {
+      return Stripe.card.validateCVC(modelValue);
+    };
     
     ctrl.register = function(validator) {
       ctrl.validate = validator;
@@ -1581,7 +1594,7 @@ mdApp.component('mdCartPay', {
 });
 
 mdApp.component('mdCartEnd', {
-  template: `<md-cart-page page="6" current-page="$ctrl.step">
+  template: `<md-cart-page page="5" current-page="$ctrl.step">
               <md-cards>
                 <md-cart-shipping-address settings="$ctrl.settings"
                                           cart="$ctrl.cart">
@@ -1591,7 +1604,8 @@ mdApp.component('mdCartEnd', {
                                    settings="$ctrl.settings">
                 </md-cart-item-view>
                 <md-cart-summary settings="$ctrl.settings"
-                                 cart="$ctrl.cart">
+                                 cart="$ctrl.cart"
+                                 note="$ctrl.settings.modals.cart.end.note">
                 </md-cart-summary>
               </md-cards>
             </md-cart-page>`,
@@ -1613,7 +1627,7 @@ mdApp.component('mdCart', {
                           md-disabled="{{$ctrl.disabled}}"
                           ng-click="$ctrl.closeCart()"></button>
                 </md-actions>
-                <md-actions side="right" lines="4" ng-if="(($ctrl.step > 0) && ($ctrl.step < 6))">
+                <md-actions side="right" lines="4" ng-if="(($ctrl.step > 0) && ($ctrl.step < 5))">
                   <button md-button-icon-flat
                           md-content="delete"
                           ng-disabled="$ctrl.disabled"
@@ -1645,20 +1659,15 @@ mdApp.component('mdCart', {
                                         disabled="$ctrl.disabled"
                                         on-update="$ctrl.updateCart(name, value)"
                                         on-submit="$ctrl.stepFour()"></md-cart-shipping-methods>
-              <md-cart-review settings="$ctrl.settings"
-                              ng-if="(($ctrl.step > 2) && ($ctrl.step < 6))"
-                              step="$ctrl.step"
-                              cart="$ctrl.cart"
-                              on-submit="$ctrl.stepFive()"></md-cart-review>
               <md-cart-pay settings="$ctrl.settings"
-                           ng-if="(($ctrl.step > 3) && ($ctrl.step < 7))"
+                           ng-if="(($ctrl.step > 2) && ($ctrl.step < 6))"
                            step="$ctrl.step"
                            cart="$ctrl.cart"
                            disabled="$ctrl.disabled"
                            on-update="$ctrl.updateCart(name, value)"
-                           on-submit="$ctrl.stepSix()"></md-cart-pay>
+                           on-submit="$ctrl.stepFive()"></md-cart-pay>
               <md-cart-end settings="$ctrl.settings"
-                           ng-if="($ctrl.step > 4)"
+                           ng-if="($ctrl.step > 3)"
                            step="$ctrl.step"
                            cart="$ctrl.order"></md-cart-end>
             </md-full-screen>
@@ -1735,18 +1744,14 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepFive = function() {
-      ctrl.step = 5;
-    };
-    
-    ctrl.stepSix = function() {
       ctrl.disabled = true;
       mdCartFactory.payCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
-          ctrl.order = mdCartFactory.getCart();
+          ctrl.order = angular.merge({}, mdCartFactory.getCart());
           mdCartFactory.createCart(function(response) {
             mdIntercomFactory.get('error')(response);
           });
-          ctrl.step = 6;
+          ctrl.step = 5;
           ctrl.cart = mdCartFactory.getCart();
         }
         ctrl.disabled = false;
@@ -1769,7 +1774,7 @@ mdApp.component('mdCart', {
           ctrl.step = 4;
         }
       } else if (ctrl.cart.status === 'paid') {
-        ctrl.step = 6;
+        ctrl.step = 5;
       }
       ctrl.order = {};
       ctrl.disabled = false;
