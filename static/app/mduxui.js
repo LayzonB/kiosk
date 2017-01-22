@@ -1608,103 +1608,6 @@ mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdRaised', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.on('mousedown', function(event) {
-        if (scope.$eval(attrs.mdRaised)) {
-          element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
-        }
-      });
-      element.on('mouseup', function(event) {
-        if (scope.$eval(attrs.mdRaised)) {
-          element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdActive', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdActive', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.originalBackground) {
-            attrs.$set('originalBackground', element.css('background'));
-          }
-          element.css({'background': 'rgba(0, 0, 0, 0.08)'});
-        } else {
-          if (attrs.originalBackground) {
-            element.css({'background': attrs.originalBackground});
-          }
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdDisabled', function(value) {
-        if (scope.$eval(value)) {
-          var s = {};
-          var color = element.css('color');
-          var cursor = element.css('cursor');
-          if (!attrs.originalColor) {
-            attrs.$set('originalColor', color);
-          }
-          if (!attrs.originalCursor) {
-            if ((cursor === 'pointer') || (cursor === 'text')) {
-              attrs.$set('originalCursor', cursor);
-            }
-          }
-          s['color'] = 'rgba(0, 0, 0, 0.38)';
-          if ((cursor === 'pointer') || (cursor === 'text')) {
-            s['cursor'] = 'not-allowed';
-          }
-          element.css(s);
-        } else {
-          if (attrs.originalColor) {
-            element.css({'color': attrs.originalColor});
-          }
-          if (attrs.originalCursor) {
-            element.css({'cursor': attrs.originalCursor});
-          }
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdError', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.originalColor) {
-            attrs.$set('originalColor', element.css('color'));
-          }
-          var originalBorderBottomColor = element.css('border-bottom-color');
-          if (originalBorderBottomColor) {
-            attrs.$set('originalBorderBottomColor', originalBorderBottomColor);
-            element.css({'border-bottom-color': 'rgba(255, 0, 0, 0.87)'});
-          }
-          element.css({'color': 'rgba(255, 0, 0, 0.87)'});
-        } else {
-          if (attrs.originalColor) {
-            element.css({'color': attrs.originalColor});
-          }
-          if (attrs.originalBorderBottomColor) {
-            element.css({'border-bottom-color': attrs.originalBorderBottomColor});
-          }
-        }
-      });
-    }
-  };
-}]);
-
 mdUXUI.directive('mdFont', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
@@ -1822,6 +1725,107 @@ mdUXUI.directive('mdClear', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       element.css({'clear': 'both'});
+    }
+  };
+}]);
+
+mdUXUI.directive('mdRaised', ['mdStyle', function(mdStyle) {
+  return {
+    priority: 100,
+    link: function(scope, element, attrs) {
+      element.on('mousedown', function(event) {
+        if (scope.$eval(attrs.mdRaised)) {
+          element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
+        }
+      });
+      element.on('mouseup', function(event) {
+        if (scope.$eval(attrs.mdRaised)) {
+          element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdActive', ['mdStyle', function(mdStyle) {
+  return {
+    priority: 100,
+    link: function(scope, element, attrs) {
+      attrs.$observe('mdActive', function(value) {
+        if (scope.$eval(value)) {
+          if (!attrs.originalBackground) {
+            attrs.$set('originalBackground', element.css('background'));
+          }
+          element.css({'background': 'rgba(0, 0, 0, 0.08)'});
+        } else {
+          if (attrs.originalBackground) {
+            element.css({'background': attrs.originalBackground});
+          }
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
+  return {
+    priority: 100,
+    link: function(scope, element, attrs) {
+      attrs.$observe('mdDisabled', function(value) {
+        if (scope.$eval(value)) {
+          var s = {};
+          var color = element.css('color');
+          var cursor = element.css('cursor');
+          if (!attrs.originalColor) {
+            attrs.$set('originalColor', color);
+          }
+          if (!attrs.originalCursor) {
+            if ((cursor === 'pointer') || (cursor === 'text')) {
+              attrs.$set('originalCursor', cursor);
+            }
+          }
+          s['color'] = 'rgba(0, 0, 0, 0.38)';
+          if ((cursor === 'pointer') || (cursor === 'text')) {
+            s['cursor'] = 'not-allowed';
+          }
+          element.css(s);
+        } else {
+          if (attrs.originalColor) {
+            element.css({'color': attrs.originalColor});
+          }
+          if (attrs.originalCursor) {
+            element.css({'cursor': attrs.originalCursor});
+          }
+        }
+      });
+    }
+  };
+}]);
+
+mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
+  return {
+    priority: 100,
+    link: function(scope, element, attrs) {
+      attrs.$observe('mdError', function(value) {
+        if (scope.$eval(value)) {
+          if (!attrs.originalColor) {
+            attrs.$set('originalColor', element.css('color'));
+          }
+          var originalBorderBottomColor = element.css('border-bottom-color');
+          if (originalBorderBottomColor) {
+            attrs.$set('originalBorderBottomColor', originalBorderBottomColor);
+            element.css({'border-bottom-color': 'rgba(255, 0, 0, 0.87)'});
+          }
+          element.css({'color': 'rgba(255, 0, 0, 0.87)'});
+        } else {
+          if (attrs.originalColor) {
+            element.css({'color': attrs.originalColor});
+          }
+          if (attrs.originalBorderBottomColor) {
+            element.css({'border-bottom-color': attrs.originalBorderBottomColor});
+          }
+        }
+      });
     }
   };
 }]);
