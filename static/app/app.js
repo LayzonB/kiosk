@@ -1,1833 +1,2373 @@
 (function() {
   'use strict';
 
-/*--------------------------------------------------UXUI Module--------------------------------------------------*/
+/*--------------------------------------------------App--------------------------------------------------*/
 
-var mdUXUI = angular.module('mdUXUI', []);
+var dataLayer = [];
 
-/*--------------------------------------------------Styling Services--------------------------------------------------*/
+var mdApp = angular.module('mdApp', ['mdUXUI', 'ngTouch', 'ngCookies']);
 
-mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
+mdApp.config([function() {
   
-  var extend = function(base, extension) {
-    return angular.merge(base, extension);
+}]);
+
+mdApp.run([function(){
+  
+}]);
+
+/*--------------------------------------------------Services--------------------------------------------------*/
+
+mdApp.factory('mdIntercomFactory', [function() {
+  
+  var calls = {};
+  
+  var registerCallback = function(name, callback) {
+    calls[name] = callback;
   };
   
-  var misc = function(name, style) {
-    var template = {
-      'textLight': {'font-weight': '300'},
-      'textNormal': {'font-weight': '400'},
-      'textMedium': {'font-weight': '500'},
-      'textBullet': {'list-style-type': 'disc'},
-      'textTrim': {
-        'text-overflow': 'ellipsis',
-        'white-space': 'nowrap',
-        'overflow': 'hidden'
-      },
-      'textLeft': {'text-align': 'left'},
-      'textCenter': {'text-align': 'center'},
-      'textRight': {'text-align': 'right'},
-      'textTop': {'vertical-align': 'top'},
-      'textMiddle': {'vertical-align': 'middle'},
-      'textBottom': {'vertical-align': 'bottom'},
-      'seam': {'border-bottom': '1px solid rgba(0, 0, 0, 0.12)'},
-    };
-    if (style) {
-      return extend(style, template[name]);
+  var getCallback = function(name) {
+    return calls[name];
+  };
+  
+  return {
+    'register': registerCallback,
+    'get': getCallback
+  };
+  
+}]);
+
+mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
+  
+  var cart;
+  
+  var resetCart = function(callback) {
+    $http.get('account', {'cache': true}).then(function(response) {
+      var account = response.data;
+      var testCart = {
+        'currency': 'usd',
+        'coupon': '',
+        'email': 'margotrobbie@example.com',
+        'items': [{
+          'currency': 'usd',
+          'description': 'Product Name',
+          'amount': 100,
+          'parent': 'sku_9qYkc73aiaE6VG',
+          'product': 'prod_80HnnViSIO0LWc',
+          'quantity': 1,
+          'type': 'sku'
+        }],
+        'shipping': {
+          'name': 'Margot Robbie',
+          'phone': '+12223334444',
+          'address': {
+            'country': 'US',
+            'state': 'California',
+            'city': 'Beverly Hills',
+            'postal_code': '91210',
+            'line1': 'Rodeo Drive 42',
+            'line2': 'Apartment 007'
+          }
+        },
+        'card': {},
+        'amount': '',
+        'status': 'new'
+      };
+      var newCart = {
+        'currency': account.default_currency,
+        'coupon': '',
+        'email': '',
+        'items': [],
+        'shipping': {
+          'name': '',
+          'phone': '',
+          'address': {
+            'country': '',
+            'state': '',
+            'city': '',
+            'postal_code': '',
+            'line1': '',
+            'line2': ''
+          }
+        },
+        'card': {},
+        'amount': '',
+        'status': 'new'
+      };
+      cart = angular.merge({}, newCart);
+      callback(response);
+    }, callback);
+  };
+  
+  var getCart = function() {
+    return cart;
+  };
+  
+  var createCart = function(callback) {
+    var orderId = $cookies.get('orderId');
+    if (orderId) {
+      $http.get('order/' + orderId, {'cache': true}).then(function(response) {
+        resetCart(function(res) {angular.merge(cart, response.data); callback(res);});
+      }, callback);
     } else {
-      return extend({}, template[name]);
+      resetCart(callback);
     }
   };
   
-  var pad = function(value) {
-    var padding = [];
-    angular.forEach(value.split(","), function(item) {
-      padding.push((item === 0) ? item.toString() : item.toString() + 'px');
-    });
-    return {'padding': padding.join(" ")};
-  };
-  
-  var general = function(style) {
-    var template = {
-      'display': 'block',
-      'position': 'relative',
-      'box-sizing': 'border-box',
-      'overflow': 'visible',
-      'border': 'none',
-      'outline': 'none',
-      'border-radius': '0',
-      'margin': '0',
-      'padding': '0',
-      'background': 'rgba(0, 0, 0, 0)',
-      'tap-highlight-color': 'rgba(0, 0, 0, 0)',
-      'transition': 'all 0.2s linear 0s',
-    };
-    return extend(template, style);
-  };
-  
-  var icon = function(style) {
-    var template = {
-      'font-family': 'Material Icons',
-      'display': 'inline-block',
-      'line-height': '1',
-      'text-align': 'center',
-      'white-space': 'nowrap',
-      'vertical-align': 'middle',
-      'color': 'rgba(0, 0, 0, 0.54)',
-      'font-size': '24px',
-      'text-rendering': 'optimizeLegibility',
-      'font-smoothing': 'antialiased',
-      'transition': 'all 0.2s linear 0s',
-    };
-    return extend(template, style);
-  };
-  
-  var socicon = function(style) {
-    var template = {
-      'font-family': 'Mono Social Icons Font',
-      'display': 'inline-block',
-      'line-height': '1',
-      'text-align': 'center',
-      'white-space': 'nowrap',
-      'vertical-align': 'middle',
-      'color': 'rgba(0, 0, 0, 0.54)',
-      'font-size': '24px',
-      'text-rendering': 'optimizeLegibility',
-      'font-smoothing': 'antialiased',
-      'transition': 'all 0.2s linear 0s',
-    };
-    return extend(template, style);
-  };
-  
-  var font = function(name, style) {
-    //'font-family': 'inherit',
-    var template = {
-      'font-family': '"Roboto", sans-serif',
-      'font-weight': 'normal',
-      'font-style': 'normal',
-      'font-variant': 'normal',
-      'text-decoration': 'none',
-      'text-align': 'left',
-      'text-transform': 'none',
-      'text-overflow': 'clip',
-      'text-shadow': 'none',
-      'text-indent': '0px',
-      'line-height': 'normal',
-      'letter-spacing': 'normal',
-      'word-wrap': 'normal',
-      'word-break': 'break-word',
-      'word-spacing': 'normal',
-      'white-space': 'normal',
-      'overflow': 'visible',
-      'vertical-align': 'baseline',
-      'text-rendering': 'optimizeLegibility',
-      'font-smoothing': 'antialiased',
-      'font-feature-settings': 'liga',
-      'transition': 'all 0.2s linear 0s',
-    };
-    var fonts = {
-      'default': {},
-      'error': {
-        'color': 'rgba(255, 0, 0, 0.87)',
-      },
-      'disabled': {
-        'color': 'rgba(0, 0, 0, 0.38)',
-        'cursor': 'not-allowed',
-      },
-      'caption': {
-        'font-size': '12px',
-        'font-weight': '400',
-        'line-height': '20px',
-        'letter-spacing': '0.2px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'helper': {
-        'font-size': '12px',
-        'font-weight': '400',
-        'line-height': '14px',
-        'letter-spacing': '0.2px',
-        'color': 'rgba(0, 0, 0, 0.38)',
-      },
-      'body1': {
-        'font-size': '14px',
-        'font-weight': '400',
-        'line-height': '20px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'link': {
-        'font-size': '14px',
-        'font-weight': '400',
-        'line-height': '20px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-        'text-decoration': 'underline',
-        'cursor': 'pointer',
-      },
-      'secondary': {
-        'font-size': '14px',
-        'font-weight': '400',
-        'line-height': '20px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'gridtext': {
-        'font-size': '14px',
-        'font-weight': '400',
-        'line-height': '16px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'brief': {
-        'font-size': '14px',
-        'font-weight': '400',
-        'line-height': '16px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(255, 255, 255, 1)',
-      },
-      'body2': {
-        'font-size': '14px',
-        'font-weight': '500',
-        'line-height': '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'menu': {
-        'font-size': '14px',
-        'font-weight': '500',
-        'line-height': '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'button': {
-        'font-size': '14px',
-        'font-weight': '500',
-        'line-height': '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-        'text-align': 'center',
-        'text-transform': 'uppercase',
-        'white-space': 'nowrap',
-      },
-      'subheader': {
-        'font-size': '14px',
-        'font-weight': '500',
-        'line-height': '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'subhead': {
-        'font-size': '16px',
-        'font-weight': '400',
-        'line-height':  '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'primary': {
-        'font-size': '16px',
-        'font-weight': '400',
-        'line-height':  '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'input': {
-        'font-size': '16px',
-        'font-weight': '400',
-        'line-height':  '20px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'label': {
-        'font-size': '16px',
-        'font-weight': '400',
-        'line-height':  '20px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.38)',
-      },
-      'label_focused': {
-        'font-size': '12px',
-        'font-weight': '400',
-        'line-height':  '14px',
-        'letter-spacing': '0.2px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'hint': {
-        'font-size': '16px',
-        'font-weight': '400',
-        'line-height':  '20px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.38)',
-      },
-      'notification': {
-        'font-size': '16px',
-        'font-weight': '400',
-        'line-height':  '24px',
-        'letter-spacing': '0.1px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'title': {
-        'font-size': '20px',
-        'font-weight': '500',
-        'line-height':  '28px',
-        'letter-spacing': '0.05px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'headline': {
-        'font-size': '24px',
-        'font-weight': '400',
-        'line-height':  '32px',
-        'letter-spacing': '0px',
-        'color': 'rgba(0, 0, 0, 0.87)',
-      },
-      'display1': {
-        'font-size': '34px',
-        'font-weight': '400',
-        'line-height':  '40px',
-        'letter-spacing': '0px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'display2': {
-        'font-size': '45px',
-        'font-weight': '400',
-        'line-height':  '48px',
-        'letter-spacing': '0px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'display3': {
-        'font-size': '56px',
-        'font-weight': '400',
-        'line-height':  '62px',
-        'letter-spacing': '-0.05px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-      'display4': {
-        'font-size': '112px',
-        'font-weight': '300',
-        'line-height':  '124px',
-        'letter-spacing': '-0.1px',
-        'color': 'rgba(0, 0, 0, 0.54)',
-      },
-    };
-    if (style) {
-      return extend(template, extend(fonts[name], style));
-    }
-    return extend(template, fonts[name]);
-  };
-  
-  var modal = function(name, style) {
-    var template = {
-      'case': {
-        'display': 'flex',
-        'position': 'fixed',
-        'box-sizing': 'border-box',
-        'overflow': 'hidden',
-        'border': 'none',
-        'outline': 'none',
-        'border-radius': '0',
-        'margin': '0',
-        'padding': '0',
-        'background': 'rgba(0, 0, 0, 0)',
-        'tap-highlight-color': 'rgba(0, 0, 0, 0)',
-        'top': '0',
-        'left': '0',
-        'right': '0',
-        'bottom': '0',
-        'flex-direction': 'row',
-        'flex-wrap': 'nowrap',
-        'justify-content': 'center',
-        'align-items': 'center',
-        'align-content': 'center',
-        'min-width': '224px',
-      },
-      'screen': {
-        'display': 'block',
-        'position': 'fixed',
-        'box-sizing': 'border-box',
-        'overflow': 'hidden',
-        'border': 'none',
-        'outline': 'none',
-        'border-radius': '0',
-        'margin': '0',
-        'padding': '0',
-        'background': 'rgba(0, 0, 0, 0.12)',
-        'tap-highlight-color': 'rgba(0, 0, 0, 0)',
-        'top': '0',
-        'left': '0',
-        'right': '0',
-        'bottom': '0',
-        'z-index': '100',
-      },
-      'sheet': {
-        'display': 'block',
-        'position': 'relative',
-        'box-sizing': 'border-box',
-        'overflow': 'hidden',
-        'border': 'none',
-        'outline': 'none',
-        'border-radius': '0',
-        'margin': '0',
-        'padding': '0',
-        'background': 'rgba(255, 255, 255, 1)',
-        'tap-highlight-color': 'rgba(0, 0, 0, 0)',
-        'z-index': '200',
-      },
-    };
-    return extend(template[name], style);
-  };
-  
-  var page = function(style) {
-    var template = {
-      'display': 'block',
-      'position': 'absolute',
-      'box-sizing': 'border-box',
-      'overflow': 'hidden',
-      'border': 'none',
-      'outline': 'none',
-      'border-radius': '0',
-      'margin': '0',
-      'padding': '0',
-      'background': 'rgba(255, 255, 255, 1)',
-      'tap-highlight-color': 'rgba(0, 0, 0, 0)',
-      'left': '0',
-      'right': '0',
-      'top': '0',
-      'bottom': '0',
-      'z-index': '100',
-      'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
-    };
-    return extend(template, style);
-  };
-  
-  var collections = function(style) {
-    var template = {
-      'display': 'flex',
-      'position': 'relative',
-      'box-sizing': 'border-box',
-      'overflow': 'visible',
-      'border': 'none',
-      'outline': 'none',
-      'border-radius': '0',
-      'margin': '0',
-      'padding': '0',
-      'background': 'rgba(0, 0, 0, 0)',
-      'tap-highlight-color': 'rgba(0, 0, 0, 0)',
-      'justify-content': 'center',
-      'align-items': 'stretch',
-      'align-content': 'flex-start',
-      'flex-direction': 'column',
-      'flex-wrap': 'nowrap',
-    };
-    return extend(template, style);
-  };
-  
-  var ripple = function(element, theme) {
-    var timer_delay;
-    var s = {
-      'position': 'absolute',
-      'background': 'rgba(0, 0, 0, 0.08)',
-      'border-radius': '50%',
-      'top': '0px',
-      'left': '0px',
-      'height': '48px',
-      'width': '48px',
-      'transform': 'scale(0, 0)',
-      'opacity': '0',
-    };
-    var surface = angular.element('<div></div>');
-    surface.css(general(s));
-    element.append(surface);
-    theme = theme || 'icon-dark';
-    if (theme === 'tracking-dark') {
-      surface.css({'background': 'rgba(0, 0, 0, 0.16)'});
-    } else if ((theme === 'tracking-light') || (theme === 'icon-light')) {
-      surface.css({'background': 'rgba(255, 255, 255, 0.20)'});
-    }
-    var resetAnimation = function() {
-      var s = {
-        'transition': 'all 0s ease 0s',
-        'transform': 'scale(0, 0)',
-        'opacity': '0',
-      };
-      surface.css(s);
-    };
-    var position = function(event) {
-      var parent_width = element[0].clientWidth;
-      var parent_height = element[0].clientHeight;
-      var element_position = element[0].getBoundingClientRect();
-      var parent_diagonal = 2 * (Math.round(Math.sqrt((parent_width * parent_width) + (parent_height * parent_height))));
-      if (parent_diagonal > 2000) {
-        parent_diagonal = 2000;
-      }
-      var margin = -(parent_diagonal/2);
-      var s = {
-        'top': (event.clientY - element_position.top).toString(),
-        'left': (event.clientX - element_position.left).toString(),
-        'height': parent_diagonal.toString(),
-        'width': parent_diagonal.toString(),
-        'margin-top': margin.toString(),
-        'margin-left': margin.toString(),
-      };
-      surface.css(s);
-    };
-    var animate = function(opacityInterval, scaleInterval) {
-      var OI = (opacityInterval / 1000).toString();
-      var SI = (scaleInterval / 1000).toString();
-      var s = {
-        'transition': 'opacity ' + OI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -webkit-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -moz-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -o-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -ms-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s',
-        'transform': 'scale(1, 1)',
-        'opacity': '1',
-      };
-      surface.css(s);
-      $timeout(function() {surface.css({'opacity': '0'});}, opacityInterval);
-      timer_delay = $timeout(function() {resetAnimation();}, scaleInterval);
-    };
-    element.on('mousedown', function(event) {
-      $timeout.cancel(timer_delay);
-      resetAnimation();
-      if ((theme === 'tracking-dark') || (theme === 'tracking-light')) {
-        position(event);
-        animate(300, 600);
-      } else {
-        animate(200, 400);
-      }
-    });
-  };
-  
-  var calculateContainer = function (containerWidth, minItemWidth) {
-    var itemCount = 2;
-    while (true) {
-      if ((containerWidth / itemCount) < minItemWidth) {
-        itemCount = itemCount - 1;
-        var itemWidth = containerWidth / itemCount;
-        var item = {
-          'itemCount': itemCount,
-          'itemWidth': Math.floor(itemWidth),
-          'sidePadding': Math.floor((containerWidth % (Math.floor(itemWidth) * itemCount)) / 2),
-        };
-        return item;
-      } else {
-        itemCount = itemCount + 1;
-      }
+  var deleteCart = function(callback) {
+    var orderId = $cookies.get('orderId');
+    if (orderId) {
+      var order = {'id': orderId, 'status': 'canceled'};
+      $http.post('order/update', order, {'cache': true}).then(function(response) {
+        $cookies.remove('orderId', orderId);
+        resetCart(callback);
+      }, callback);
+    } else {
+      resetCart(callback);
     }
   };
   
-  return {
-    'misc': misc,
-    'pad': pad,
-    'general': general,
-    'icon': icon,
-    'socicon': socicon,
-    'font': font,
-    'modal': modal,
-    'page': page,
-    'collections': collections,
-    'ripple': ripple,
-    'calculateContainer': calculateContainer,
-  };
-}]);
-
-/*--------------------------------------------------Styling Directives--------------------------------------------------*/
-
-mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    template: `{{content}}`,
-    scope: {},
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdContent', function(value) {
-        if (scope.content !== value) {
-          $timeout(function() {element.css({'opacity': '0'});});
-          $timeout(function() {scope.content = value; element.css({'opacity': '1'});}, 200);
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding-top': '2px',
-        'min-height': '22px',
-        'transform-origin': 'left top 0px',
-        'transform': 'translate(0px, 28px) scale(1)',
-        'transition': 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s',
-      };
-      element.css(mdStyle.font('label', mdStyle.general(s)));
-      var error = false;
-      var disabled = false;
-      var focus = false;
-      var update = function() {
-        var s = {};
-        if (focus) {
-          if (error) {
-            s['color'] = 'rgba(255, 0, 0, 0.87)';
-          } else if (disabled) {
-            s['color'] = 'rgba(0, 0, 0, 0.38)';
-          } else {
-            s['color'] = 'rgba(0, 0, 0, 0.54)';
-          }
-          attrs.$set('originalColor', 'rgba(0, 0, 0, 0.54)');
-          //s['line-height'] = '14px';
-          //s['font-size'] = '12px';
-          //s['letter-spacing'] = '0.2px';
-          //s['color'] = 'rgba(0, 0, 0, 0.54)';
-          //s['padding-top'] = '8px';
-          //s['transform'] = 'translate(0px, 6px) scale(0.75)';
-          //s['color'] = 'rgba(0, 0, 0, 0.54)';
-          s['transform'] = 'translate(0px, 6px) scale(0.75)';
-        } else {
-          if (error) {
-            s['color'] = 'rgba(255, 0, 0, 0.87)';
-          } else if (disabled) {
-            s['color'] = 'rgba(0, 0, 0, 0.38)';
-          } else {
-            s['color'] = 'rgba(0, 0, 0, 0.38)';
-          }
-          attrs.$set('originalColor', 'rgba(0, 0, 0, 0.38)');
-          //s['line-height'] = '20px';
-          //s['font-size'] = '16px';
-          //s['letter-spacing'] = '0.1px';
-          //s['color'] = 'rgba(0, 0, 0, 0.38)';
-          //s['padding-top'] = '2px';
-          //s['transform'] = 'translate(0px, 28px) scale(1)';
-          //s['color'] = 'rgba(0, 0, 0, 0.38)';
-          s['transform'] = 'translate(0px, 28px) scale(1)';
-        }
-        element.css(s);
-      };
-      update();
-      attrs.$observe('mdError', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          error = val;
-          $timeout(function() {update();});
-        }
-      });
-      attrs.$observe('mdDisabled', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          disabled = val;
-          $timeout(function() {update();});
-        }
-      });
-      attrs.$observe('focus', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          focus = val;
-          $timeout(function() {update();});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdInputHelper', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '4px 0',
-        'min-height': '22px',
-      };
-      element.css(mdStyle.font('helper', mdStyle.general(s)));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdInputText', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'cursor': 'text',
-        'padding': '8px 0 7px',
-        'border-bottom': '1px solid rgba(0, 0, 0, 0.12)',
-        'width': '100%',
-        'min-height': '36px',
-      };
-      element.css(mdStyle.font('input', mdStyle.general(s)));
-      attrs.$observe('mdDisabled', function(value) {
-        var s = {};
-        if (scope.$eval(value)) {
-          s['color'] = 'rgba(0, 0, 0, 0.38)';
-        } else {
-          s['color'] = 'rgba(0, 0, 0, 0.87)';
-        }
-        attrs.$set('originalColor', 'rgba(0, 0, 0, 0.87)');
-        element.css(s);
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdInputNumber', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'cursor': 'text',
-        'padding': '4px ',
-        'border': 'none',
-        'min-height': '36px',
-        'appearance': 'none',
-        'width': '100%',
-      };
-      //'width': '96px',
-      element.css(mdStyle.font('display1', mdStyle.misc('textCenter', mdStyle.general(s))));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdInputSelection', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'cursor': 'pointer',
-        'padding': '8px 0 7px',
-        'border-bottom': '1px solid rgba(0, 0, 0, 0.12)',
-        'width': '100%',
-        'min-height': '36px',
-      };
-      element.css(mdStyle.font('input', mdStyle.general(s)));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdInputSelectionIcon', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'absolute',
-        'overflow': 'hidden',
-        'font-size': '24px',
-        'right': '0',
-        'top': '6px',
-      };
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdButtonIconRaised', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'width': '48px',
-        'height': '48px',
-        'padding': '12px',
-        'overflow': 'hidden',
-        'color': 'rgba(255, 255, 255, 1)',
-        'text-shadow': '1px 2px 2px rgba(0, 0, 0, 0.54)',
-        'cursor': 'pointer',
-      };
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
-      mdStyle.ripple(element, 'icon-dark');
-      element.on('mousedown', function(event) {
-        element.css({'text-shadow': '2px 4px 4px rgba(0, 0, 0, 0.54)'});
-      });
-      element.on('mouseup', function(event) {
-        element.css({'text-shadow': '1px 2px 2px rgba(0, 0, 0, 0.54)'});
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'width': '48px',
-        'height': '48px',
-        'padding': '12px',
-        'overflow': 'hidden',
-        'color': 'rgba(0, 0, 0, 0.54)',
-        'cursor': 'pointer',
-      };
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
-      mdStyle.ripple(element, 'icon-dark');
-    }
-  };
-}]);
-
-mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'min-width': '64px',
-        'height': '36px',
-        'padding': '6px 8px',
-        'margin': '6px 4px',
-        'border-radius': '2px',
-        'overflow': 'hidden',
-        'background': 'rgba(255, 255, 255, 1)',
-        'color': 'rgba(0, 0, 0, 0.87)',
-        'cursor': 'pointer',
-      };
-      element.css(mdStyle.font('button', mdStyle.general(s)));
-      mdStyle.ripple(element, 'tracking-dark');
-    }
-  };
-}]);
-
-mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'min-width': '64px',
-        'height': '36px',
-        'padding': '6px 8px',
-        'margin': '6px 4px',
-        'border-radius': '2px',
-        'overflow': 'hidden',
-        'background': 'rgba(255, 255, 255, 1)',
-        'color': 'rgba(0, 0, 0, 0.87)',
-        'cursor': 'pointer',
-        'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.font('button', mdStyle.general(s)));
-      mdStyle.ripple(element, 'tracking-dark');
-    }
-  };
-}]);
-
-mdUXUI.directive('mdButtonComposite', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'overflow': 'hidden',
-        'width': '100%',
-        'cursor': 'pointer',
-      };
-      element.css(mdStyle.general(s));
-      mdStyle.ripple(element, attrs.theme);
-    }
-  };
-}]);
-
-mdUXUI.directive('mdRipple', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      mdStyle.ripple(element, attrs.mdRipple);
-    }
-  };
-}]);
-
-mdUXUI.directive('mdFullScreenCase', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.modal('case', {}));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdDrawerWideCase', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '0 0 0 56px',
-        'justify-content': 'flex-end',
-      };
-      element.css(mdStyle.modal('case', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdDrawerNarrowCase', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '0 0 0 56px',
-        'justify-content': 'flex-end',
-      };
-      element.css(mdStyle.modal('case', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSimpleCase', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '24px 40px',
-      };
-      element.css(mdStyle.modal('case', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdConfirmationCase', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '24px 40px',
-      };
-      element.css(mdStyle.modal('case', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdModalScreen', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.modal('screen', {}));
-      var active = false;
-      var toggle = function() {
-        var s = {};
-        if (active) {
-          s['transition'] = 'all 0.2s linear 0s';
-          s['opacity'] = '1';
-        } else {
-          s['transition'] = 'all 0.2s linear 0.1s';
-          s['opacity'] = '0';
-        }
-        element.css(s);
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          active = val;
-          $timeout(function() {toggle();});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdModalSlide', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var side = attrs.mdModalSlide;
-      var active = false;
-      var toggle = function() {
-        var s = {};
-        if (active) {
-          s['transition'] = 'all 0.3s cubic-bezier(0, 0, 0.4, 1) 0s';
-          s['transform'] = 'translate(0%, 0%)';
-        } else {
-          s['transition'] = 'all 0.3s cubic-bezier(0.8, 0, 1, 1) 0s';
-          if (side === 'right') {
-            s['transform'] = 'translate(110%, 0%)';
-          } else if (side === 'left') {
-            s['transform'] = 'translate(-110%, 0%)';
-          } else if (side === 'top') {
-            s['transform'] = 'translate(0%, -110%)';
-          } else if (side === 'bottom') {
-            s['transform'] = 'translate(0%, 110%)';
-          }
-        }
-        element.css(s);
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          active = val;
-          $timeout(function() {toggle();});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdModalFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var active = false;
-      var toggle = function() {
-        var s = {};
-        s['transition'] = 'all 0.3s linear 0s';
-        if (active) {
-          s['opacity'] = '1';
-        } else {
-          s['opacity'] = '0';
-        }
-        element.css(s);
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          active = val;
-          $timeout(function() {toggle();});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdFullScreenSheet', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'width': '100%',
-        'min-width': '224px',
-        'height': '100%',
-        'box-shadow': '0 0 16px 4px rgba(0, 0, 0, 0.26)'
-      };
-      element.css(mdStyle.modal('sheet', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdDrawerWideSheet', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'width': '100%',
-        'min-width': '168px',
-        'max-width': '560px',
-        'height': '100%',
-        'box-shadow': '0 0 16px 4px rgba(0, 0, 0, 0.26)'
-      };
-      element.css(mdStyle.modal('sheet', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdDrawerNarrowSheet', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'width': '100%',
-        'min-width': '168px',
-        'max-width': '280px',
-        'height': '100%',
-        'box-shadow': '0 0 16px 4px rgba(0, 0, 0, 0.26)'
-      };
-      element.css(mdStyle.modal('sheet', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSimpleSheet', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'relative',
-        'border-radius': '2px',
-        'width': '100%',
-        'min-width': '168px',
-        'max-width': '560px',
-        'height': '100%',
-        'box-shadow': '0 12px 24px 6px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.modal('sheet', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdConfirmationSheet', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'relative',
-        'border-radius': '2px',
-        'width': '100%',
-        'min-width': '168px',
-        'max-width': '560px',
-        'box-shadow': '0 12px 24px 6px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.modal('sheet', s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdPage', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {};
-      if (attrs.top) {
-        s['top'] = attrs.top;
-      }
-      if (attrs.bottom) {
-        s['bottom'] = attrs.bottom;
-      }
-      if (attrs.verticalScroll) {
-        s['overflow-y'] = attrs.verticalScroll;
-      }
-      if (attrs.horizontalScroll) {
-        s['overflow-x'] = attrs.horizontalScroll;
-      }
-      element.css(mdStyle.page(s));
-      attrs.$observe('position', function(value) {
-        element.css({'transform': 'translate(0%, ' + value.toString() + '%)'});
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdAppBar', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'absolute',
-        'overflow': 'hidden',
-        'background': 'rgba(255, 255, 255, 1)',
-        'left': '0',
-        'right': '0',
-        'min-height': '56px',
-        'z-index': '300',
-        'box-shadow': '0 2px 4px 1px rgba(0, 0, 0, 0.26)',
-        'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
-      };
-      element.css(mdStyle.general(s));
-      attrs.$observe('top', function(value) {
-        element.css({'transform': 'translate(0px, ' + value.toString() + 'px)'});
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSnackBar', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'fixed',
-        'overflow': 'hidden',
-        'background': 'rgba(0, 0, 0, 0.80)',
-        'left': '0',
-        'right': '0',
-        'bottom': '0',
-        'padding': '24px 16px',
-        'z-index': '300',
-        'box-shadow': '0px 3px 6px 1.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdActions', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'absolute',
-        'overflow': 'hidden',
-        'z-index': '200',
-        'justify-content': 'flex-start',
-        'flex-direction': 'row',
-      };
-      if (attrs.lines > '3') {
-        s['top'] = '4px';
-      } else if (attrs.lines === '2') {
-        s['top'] = '12px';
-      } else {
-        s['top'] = '0';
-      }
-      if (attrs.side === 'left') {
-        s['left'] = attrs.dialog ? '12px' : '4px';
-      } else if (attrs.side === 'right') {
-        s['right'] = attrs.dialog ? '12px' : '4px';
-      }
-      element.css(mdStyle.collections(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdAction', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'flex-direction': 'row',
-      };
-      if (attrs.side === 'center') {
-        s['justify-content'] = 'center';
-      } else if (attrs.side === 'left') {
-        s['justify-content'] = 'flex-start';
-      } else if (attrs.side === 'right') {
-        s['justify-content'] = 'flex-end';
-      } else {
-        s['justify-content'] = 'space-between';
-      }
-      element.css(mdStyle.collections(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdGrid', ['$window', 'mdStyle', function($window, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '7px 1px',
-        'flex-direction': 'row',
-        'flex-wrap': 'wrap',
-      };
-      element.css(mdStyle.collections(s));
-      var minItemWidth = parseInt(attrs.minItemWidth);
-      var calculateContainer = function() {
-        var width = (parseInt(element.width()) - 2);
-        scope.mdGrid = mdStyle.calculateContainer(width, minItemWidth);
-      };
-      calculateContainer();
-      angular.element($window).on('resize', function() {
-        calculateContainer();
-        scope.$apply();
-      });
-      angular.element($window).on('load', function() {
-        calculateContainer();
-        scope.$apply();
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdGridCell', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {'padding': '1px'};
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdGridCellTile', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.general({}));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdList', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '8px 0',
-      };
-      element.css(mdStyle.collections(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdListCell', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.general({}));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdListCellTile', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var top = '0', bottom = '0', left = '0', right = '0';
-      if (attrs.lines > '3') {
-        top = '24px';
-        bottom = '24px';
-      } else if (attrs.lines === '2') {
-        top = '14px';
-        bottom = '14px';
-      } else if ((attrs.lines === '1') || (attrs.lines === '3')) {
-        top = '12px';
-        bottom = '12px';
-      }
-      left = attrs.dialog ? '24px' : '16px';
-      right = attrs.dialog ? '24px' : '16px';
-      if (attrs.side === 'left') {
-        left = attrs.dialog ? '80px' : '72px';
-      } else if (attrs.side === 'right') {
-        right = attrs.dialog ? '72px' : '56px';
-      }
-      var s = {
-        'padding-top': top,
-        'padding-bottom': bottom,
-        'padding-left': left,
-        'padding-right': right
-      };
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdListSubheader', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '4px 16px 12px 16px',
-      };
-      element.css(mdStyle.font('subheader', mdStyle.general(s)));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdPrimary', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.font('primary', mdStyle.general({})));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSecondary', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.font('secondary', mdStyle.general({})));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdFade', function(value) {
-        if (scope.$eval(value)) {
-          $timeout(function() {element.css({'opacity': '0'});});
-        } else {
-          $timeout(function() {element.css({'opacity': '1'});});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCards', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '4px',
-      };
-      element.css(mdStyle.collections(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCardsCell', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '4px',
-      };
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCardsCellTile', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'border-radius': '2px',
-        'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdWall', ['$window', 'mdStyle', function($window, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      /*var s = {
-        'padding': '4px',
-        'column-rule': '0 none rgba(0, 0, 0, 0)',
-        'column-gap': '0',
-        'column-count': '1',
-        'column-span': '1',
-        'column-width': 'auto',
-      };*/
-      var s = {
-        'padding': '4px',
-      };
-      element.css(mdStyle.general(s));
-      var minItemWidth = parseInt(attrs.minItemWidth);
-      var calculateContainer = function() {
-        var width = parseInt(element.width());
-        scope.mdWall = mdStyle.calculateContainer(width, minItemWidth);
-        //element.css({'column-count': wall.itemCount});
-      };
-      calculateContainer();
-      angular.element($window).on('resize', function() {
-        calculateContainer();
-        scope.$apply();
-      });
-      angular.element($window).on('load', function() {
-        calculateContainer();
-        scope.$apply();
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdWallCell', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      /*var s = {
-        'padding': '4px',
-        'break-inside': 'avoid',
-      };*/
-      var s = {
-        'padding': '4px',
-        'float': 'left',
-      };
-      element.css(mdStyle.general(s));
-      var width;
-      var setSize = function() {
-        var s = {
-          'width': width.toString() + 'px',
-        };
-        element.css(s);
-      };
-      attrs.$observe('mdWidth', function(value) {
-        if (value) {
-          width = value;
-          setSize();
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'border-radius': '2px',
-        'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCarouselFrame', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.general({'overflow': 'hidden'}));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCarousel', ['$window', '$timeout', 'mdStyle', function($window, $timeout, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'justify-content': 'flex-start',
-        'flex-direction': 'row',
-        'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
-        'height': '100%',
-        'width': '100%',
-      };
-      element.css(mdStyle.collections(s));
-      var position = 0;
-      var index = attrs.index ? parseInt(attrs.index) : 0;
-      var setCarouselSize = function() {
-        scope.mdCarouselHeight = parseInt(element.height());
-        scope.mdCarouselWidth = parseInt(element.width());
-      };
-      setCarouselSize();
-      var setPosition = function() {
-        if (position < 0) {
-          position = 0;
-        } else if (position > index) {
-          position = index;
-        }
-        var right = position * scope.mdCarouselWidth;
-        element.css({'transform': 'translate(-' + right.toString() + 'px, 0px)'});
-      };
-      angular.element($window).on('resize', function() {
-        setCarouselSize();
-        scope.$apply();
-        $timeout(function() {setPosition();});
-      });
-      angular.element($window).on('load', function() {
-        setCarouselSize();
-        scope.$apply();
-        $timeout(function() {setPosition();});
-      });
-      attrs.$observe('position', function(value) {
-        if (value) {
-          position = parseInt(value);
-          $timeout(function() {setPosition();});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCarouselCell', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'justify-content': 'center',
-        'flex-direction': 'row',
-        'align-items': 'center',
-      };
-      element.css(mdStyle.collections(s));
-      var width, height;
-      width = 0;
-      height = 0;
-      var setSize = function() {
-        var s = {
-          'min-width': width.toString() + 'px',
-          'min-height': height.toString() + 'px',
-          'max-width': width.toString() + 'px',
-          'max-height': height.toString() + 'px',
-        };
-        element.css(s);
-      };
-      setSize();
-      attrs.$observe('mdWidth', function(value) {
-        if (value) {
-          width = value;
-          setSize();
-        }
-      });
-      attrs.$observe('mdHeight', function(value) {
-        if (value) {
-          height = value;
-          setSize();
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdCarouselAction', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'position': 'absolute',
-        'overflow': 'hidden',
-        'z-index': '200',
-        'justify-content': 'center',
-        'flex-direction': 'row',
-        'align-items': 'center',
-        'top': '4px',
-        'bottom': '4px',
-      };
-      if (attrs.side === 'center') {
-        s['left'] = '4px';
-        s['right'] = '4px';
-      } else if (attrs.side === 'left') {
-        s['left'] = '4px';
-      } else if (attrs.side === 'right') {
-        s['right'] = '4px';
-      }
-      element.css(mdStyle.collections(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdImg', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var width, height, originalWidth, originalHeight;
-      width = 0;
-      height = 0;
-      element.css(mdStyle.general({}));
-      var setSize = function() {
-        var originalRatio = originalWidth / originalHeight;
-        var ratio = width / height;
-        if (originalRatio > ratio) {
-          element.css({'width': width.toString() + 'px', 'height': ''});
-        } else {
-          element.css({'height': height.toString() + 'px', 'width': ''});
-        }
-      };
-      element.on('load', function() {
-        originalWidth  = this.width;
-        originalHeight = this.height;
-        setSize();
-      });
-      attrs.$observe('mdWidth', function(value) {
-        if (value) {
-          width = value;
-          setSize();
-        }
-      });
-      attrs.$observe('mdHeight', function(value) {
-        if (value) {
-          height = value;
-          setSize();
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdLattice', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'padding': '16px 0',
-        'justify-content': 'space-around',
-        'align-items': 'center',
-        'align-content': 'space-around',
-        'flex-direction': 'row',
-        'flex-wrap': 'wrap',
-      };
-      element.css(mdStyle.collections(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdLatticeCell', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.general({}));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdLatticeCellTile', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var s = {
-        'display': 'flex',
-        'padding': '24px',
-        'justify-content': 'center',
-        'align-content': 'flex-start',
-        'flex-direction': 'column',
-        'flex-wrap': 'nowrap',
-        'align-items': 'center',
-      };
-      element.css(mdStyle.general(s));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdBase', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.general({}));
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdSeam', function(value) {
-        element.css(mdStyle.misc('seam'));
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdFont', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdFont', function(value) {
-        element.css(mdStyle.font(value));
-      });
-      attrs.$observe('mdMisc', function(value) {
-        element.css(mdStyle.misc(value));
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdIcon', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdIcon', function(value) {
-        var s = {};
-        if (value === 'thumb') {
-          s = {'font-size': '96px'};
-        } else if (value === 'avatar') {
-          s = {'font-size': '48px'};
-        }
-        element.css(mdStyle.font('default', mdStyle.icon(s)));
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdMisc', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdMisc', function(value) {
-        element.css(mdStyle.misc(value));
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdPad', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdPad', function(value) {
-        element.css(mdStyle.pad(value));
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSetWidth', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdSetWidth', function(value) {
-        if (value) {
-          element.css({'width': value.toString() + 'px'});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdSetHeight', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdSetHeight', function(value) {
-        if (value) {
-          element.css({'height': value.toString() + 'px'});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdGetWidth', ['$window', 'mdStyle', function($window, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var mdGetWidth = attrs.mdGetWidth ? parseInt(attrs.mdGetWidth) : 0;
-      var getWidth = function() {
-        scope.mdGetWidth = (parseInt(element.width()) + mdGetWidth);
-      };
-      getWidth();
-      angular.element($window).on('resize', function() {
-        getWidth();
-        scope.$apply();
-      });
-      angular.element($window).on('load', function() {
-        getWidth();
-        scope.$apply();
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdGetHeight', ['$window', 'mdStyle', function($window, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      var mdGetHeight = attrs.mdGetHeight ? parseInt(attrs.mdGetHeight) : 0;
-      var getHeight = function() {
-        scope.mdGetHeight = (parseInt(element.height()) + mdGetHeight);
-      };
-      getHeight();
-      angular.element($window).on('resize', function() {
-        getHeight();
-        scope.$apply();
-      });
-      angular.element($window).on('load', function() {
-        getHeight();
-        scope.$apply();
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdClear', ['$window', 'mdStyle', function($window, mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      element.css({'clear': 'both'});
-    }
-  };
-}]);
-
-mdUXUI.directive('mdRaised', ['mdStyle', function(mdStyle) {
-  return {
-    priority: 100,
-    link: function(scope, element, attrs) {
-      element.on('mousedown', function(event) {
-        if (scope.$eval(attrs.mdRaised)) {
-          element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
-        }
-      });
-      element.on('mouseup', function(event) {
-        if (scope.$eval(attrs.mdRaised)) {
-          element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdActive', ['mdStyle', function(mdStyle) {
-  return {
-    priority: 100,
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdActive', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.originalBackground) {
-            attrs.$set('originalBackground', element.css('background'));
-          }
-          element.css({'background': 'rgba(0, 0, 0, 0.08)'});
-        } else {
-          if (attrs.originalBackground) {
-            element.css({'background': attrs.originalBackground});
-          }
-        }
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
-  return {
-    priority: 100,
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdDisabled', function(value) {
-        if (scope.$eval(value)) {
-          var s = {};
-          var color = element.css('color');
-          var cursor = element.css('cursor');
-          if (!attrs.originalColor) {
-            attrs.$set('originalColor', color);
-          }
-          if (!attrs.originalCursor) {
-            if ((cursor === 'pointer') || (cursor === 'text')) {
-              attrs.$set('originalCursor', cursor);
+  var updateCart = function(name, value) {
+    if (cart.status === 'new') {
+      if (name === 'items') {
+        var updated = false;
+        angular.forEach(cart.items, function(item, key) {
+          if ((item.type === 'sku') && (item.parent === value.parent)) {
+            updated = true;
+            if (value.quantity > 0) {
+              cart.items[key] = value;
+            } else {
+              cart.items.splice(key, 1);
             }
           }
-          s['color'] = 'rgba(0, 0, 0, 0.38)';
-          if ((cursor === 'pointer') || (cursor === 'text')) {
-            s['cursor'] = 'not-allowed';
+        });
+        if (!updated && (value.quantity > 0)) {
+          cart.items.push(value);
+        }
+        var amount = 0;
+        angular.forEach(cart.items, function(item, key) {
+          if (item.type === 'sku') {
+            amount = amount + item.amount;
           }
-          element.css(s);
+        });
+        cart.amount = amount;
+      }
+      if (name === 'country') {
+        cart.shipping.address.country = value;
+      }
+      if (name === 'state') {
+        cart.shipping.address.state = value;
+      }
+      if (name === 'city') {
+        cart.shipping.address.city = value;
+      }
+      if (name === 'postal_code') {
+        cart.shipping.address.postal_code = value;
+      }
+      if (name === 'line1') {
+        cart.shipping.address.line1 = value;
+      }
+      if (name === 'line2') {
+        cart.shipping.address.line2 = value;
+      }
+      if (name === 'name') {
+        cart.shipping.name = value;
+      }
+      if (name === 'phone') {
+        cart.shipping.phone = value;
+      }
+      if (name === 'email') {
+        cart.email = value;
+      }
+    }
+    if (cart.status === 'created') {
+      if (name === 'shipping_method') {
+        angular.forEach(cart.shipping_methods, function(method) {
+          if (method.id === value) {
+            cart.selected_shipping_method = value;
+          }
+        });
+      }
+      if (name === 'number') {
+        cart.card.number = value;
+      }
+      if (name === 'exp_month') {
+        cart.card.exp_month = value;
+      }
+      if (name === 'exp_year') {
+        cart.card.exp_year = value;
+      }
+      if (name === 'cvc') {
+        cart.card.cvc = value;
+      }
+    }
+  };
+  
+  var saveCart = function(callback) {
+    if (!cart.id && (cart.status === 'new')) {
+      $http.post('order/create', cart, {'cache': true}).then(function(response) {
+        angular.merge(cart, response.data);
+        $cookies.put('orderId', cart.id);
+        callback(response);
+      }, callback);
+    } else if (cart.id && (cart.status === 'created')) {
+      $http.post('order/update', cart, {'cache': true}).then(function(response) {
+        angular.merge(cart, response.data);
+        callback(response);
+      }, callback);
+    }
+  };
+  
+  var payCart = function(callback) {
+    var pay = function(status, response) {
+      if ((status === 200) && (!response.used) && (response.id)) {
+        var order = {
+          'id': cart.id,
+          'source': response.id
+        };
+        $http.post('order/pay', order, {'cache': true}).then(function(response) {
+          angular.merge(cart, response.data);
+          $cookies.remove('orderId');
+          callback(response);
+        }, callback);
+      } else {
+        if (response.error && response.error.type && response.error.type === 'card_error') {
+          callback({'data': {'error': response.error.code}, 'status': status});
         } else {
-          if (attrs.originalColor) {
-            element.css({'color': attrs.originalColor});
-          }
-          if (attrs.originalCursor) {
-            element.css({'cursor': attrs.originalCursor});
-          }
+          callback({'data': response, 'status': status});
+        }
+        
+      }
+    };
+    if (cart.id) {
+      var card = {
+        'number': cart.card.number,
+        'exp_month': cart.card.exp_month,
+        'exp_year': cart.card.exp_year,
+        'cvc': cart.card.cvc,
+        'name': cart.shipping.name,
+        'address_country': cart.shipping.address.country,
+        'address_state': cart.shipping.address.state,
+        'address_city': cart.shipping.address.city,
+        'address_zip': cart.shipping.address.postal_code,
+        'address_line1': cart.shipping.address.line1,
+        'address_line2': cart.shipping.address.line2
+      };
+      Stripe.card.createToken(card, pay);
+    }
+  };
+  
+  var getCartItemQuantity = function(skuId) {
+    var quantity = 0;
+    angular.forEach(cart.items, function(item, key) {
+      if ((item.type === 'sku') && (item.parent === skuId)) {
+        quantity = item.quantity;
+      }
+    });
+    return quantity;
+  };
+  
+  return {
+    'getCart': getCart,
+    'createCart': createCart,
+    'deleteCart': deleteCart,
+    'updateCart': updateCart,
+    'saveCart': saveCart,
+    'payCart': payCart,
+    'getCartItemQuantity': getCartItemQuantity
+  };
+  
+}]);
+
+/*--------------------------------------------------Filters--------------------------------------------------*/
+
+mdApp.filter('formatCountry', [function() {
+  return function(input, countries) {
+    if (countries) {
+      var output = '';
+      angular.forEach(countries, function(country){
+        if (country.code === input) {
+          output = country.name;
         }
       });
+      return output;
     }
   };
 }]);
 
-mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
+mdApp.filter('formatCurrency', [function() {
+  return function(input, currency) {
+    if (currency) {
+      var output = parseFloat(input) || 0;
+      var formater = '1';
+      for (var i = 0; i < currency.decimal_digits; i++) {
+        formater = formater + '0';
+      }
+      formater = parseInt(formater);
+      output = output / formater;
+      output = output.toFixed(currency.decimal_digits);
+      output = output.toString();
+      return output;
+    }
+  };
+}]);
+
+mdApp.filter('formatCurrencyPrefix', [function() {
+  return function(input, currency) {
+    if (currency) {
+      var output = currency.code;
+      output = output + ' ' + input.toString();
+      return output;
+    }
+  };
+}]);
+
+mdApp.filter('formatInventory', [function() {
+  return function(inventory) {
+    var output = '';
+    if (inventory.type === 'infinite') {
+      output = Infinity;
+      
+    } else if (inventory.type === 'bucket') {
+      output = (inventory.value === 'out_of_stock') ? 0 : Infinity;
+      
+    } else if (inventory.type === 'finite') {
+      output = inventory.quantity;
+    }
+    return output;
+  };
+}]);
+
+mdApp.filter('formatAvailability', [function() {
+  return function(inventory, dictionary) {
+    var output = '';
+    if (inventory.type === 'infinite') {
+      output = 'in_stock';
+    } else if (inventory.type === 'bucket') {
+      output = inventory.value;
+    } else if (inventory.type === 'finite') {
+      output = (inventory.quantity > 0) ? 'in_stock' : 'out_of_stock';
+    }
+    if (dictionary) {
+      return dictionary[output];
+    } else {
+      return output;
+    }
+  };
+}]);
+
+/*--------------------------------------------------Components--------------------------------------------------*/
+/*--------------------------------------------------Modals--------------------------------------------------*/
+
+var modalController = function($scope, $element, $attrs, $timeout) {
+  var ctrl = this;
+  ctrl.$postLink = function() {
+    if (ctrl.active !== true && ctrl.active !== false) {
+      ctrl.alive = true;
+    }
+  };
+  ctrl.open = function() {
+    $timeout(function() {ctrl.alive = true;});
+    $timeout(function() {ctrl.onOpen();}, 300);
+  };
+  ctrl.close = function() {
+    $timeout(function() {ctrl.alive = false;});
+    $timeout(function() {ctrl.onClose();}, 300);
+  };
+  ctrl.$onChanges = function(changes) {
+    if (changes.active.currentValue === true) {
+      ctrl.open();
+    } else if (changes.active.currentValue === false) {
+      ctrl.close();
+    }
+  };
+};
+
+mdApp.component('mdFullScreen', {
+  template: `<md-full-screen-case>
+              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
+              <md-full-screen-sheet md-modal-slide="{{$ctrl.side}}" active="{{$ctrl.alive}}" ng-transclude></md-full-screen-sheet>
+            </md-full-screen-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<',
+    side: '<'
+  }
+});
+
+mdApp.component('mdDrawerWide', {
+  template: `<md-drawer-wide-case>
+              <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
+              <md-drawer-wide-sheet md-modal-slide="right" active="{{$ctrl.alive}}" ng-transclude></md-drawer-wide-sheet>
+            </md-drawer-wide-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdDrawerNarrow', {
+  template: `<md-drawer-narrow-case>
+              <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
+              <md-drawer-narrow-sheet md-modal-slide="right" active="{{$ctrl.alive}}" ng-transclude></md-drawer-narrow-sheet>
+            </md-drawer-narrow-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdFullScreenFade', {
+  template: `<md-full-screen-case>
+              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
+              <md-full-screen-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-full-screen-sheet>
+            </md-full-screen-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdSimple', {
+  template: `<md-simple-case>
+              <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
+              <md-simple-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-simple-sheet>
+            </md-simple-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdConfirmation', {
+  template: `<md-confirmation-case>
+              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
+              <md-confirmation-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-confirmation-sheet>
+            </md-confirmation-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdAppLogo', {
+  template: `<md-base>
+              <md-action side="center">
+                <img md-base
+                     ng-src="{{$ctrl.imgSrc}}"
+                     alt="{{$ctrl.imgAlt}}"
+                     width="{{$ctrl.imgWidth}}"
+                     height="{{$ctrl.imgHeight}}">
+              </md-action>
+            </md-base>`,
+  bindings: {
+    imgWidth: '<',
+    imgHeight: '<',
+    imgSrc: '<',
+    imgAlt: '<'
+  }
+});
+
+mdApp.component('mdAppIcon', {
+  template: `<md-base>
+              <md-action side="center">
+                <md-base md-icon md-pad="16" md-content="{{$ctrl.icon}}"></md-icon>
+              </md-action>
+            </md-base>`,
+  bindings: {
+    icon: '<'
+  }
+});
+
+mdApp.component('mdBrief', {
+  template: `<md-snack-bar md-modal-slide="bottom" active="{{$ctrl.alive}}">
+              <md-base md-font="brief" md-content="{{$ctrl.brief}}"></md-base>
+            </md-snack-bar>`,
+  controller: ['$scope', '$element', '$attrs', '$timeout', function($scope, $element, $attrs, $timeout) {
+    var ctrl = this;
+    var show_snackbar;
+    var hide_snackbar;
+    ctrl.show = function() {
+      ctrl.brief = ctrl.message;
+      $timeout(function() {ctrl.alive = true; ctrl.onShow();}, 300);
+    };
+    ctrl.hide = function() {
+      ctrl.alive = false;
+      $timeout(function() {ctrl.brief = ''; ctrl.onHide();}, 300);
+    };
+    ctrl.$onChanges = function(changes) {
+      if (changes.message.currentValue !== changes.message.previousValue) {
+        var readingTime = (ctrl.message.length * 200) + 2000;
+        $timeout.cancel(hide_snackbar);
+        ctrl.alive = false;
+        show_snackbar = $timeout(ctrl.show);
+        hide_snackbar = $timeout(ctrl.hide, readingTime);
+      }
+    };
+    ctrl.$onInit = function() {
+      ctrl.brief = '';
+    };
+  }],
+  bindings: {
+    message: '<',
+    onShow: '&',
+    onHide: '&'
+  }
+});
+
+/*--------------------------------------------------Inputs--------------------------------------------------*/
+
+mdApp.component('mdListItemMultiline', {
+  template: `<md-list-cell>
+              <md-list-cell-tile lines="4" ng-transclude>
+              </md-list-cell-tile>
+            </md-list-cell>`,
+  transclude: true
+});
+
+mdApp.component('mdListItemMultilineClickable', {
+  template: `<button md-button-composite
+                     ng-click="$ctrl.onClick({value: $ctrl.value})"
+                     ng-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
+                     theme="tracking-dark">
+              <md-list-item-multiline>
+                <md-base ng-transclude></md-base>
+              </md-list-item-multiline>
+            </button>`,
+  transclude: true,
+  bindings: {
+    disabled: '<',
+    onClick: '&',
+    value: '<'
+  }
+});
+
+mdApp.component('mdCardsItemMultiline', {
+  template: `<md-cards-cell>
+              <md-cards-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
+              </md-cards-cell-tile>
+            </md-cards-cell>`,
+  transclude: true,
+  bindings: {
+    disabled: '<'
+  }
+});
+
+mdApp.component('mdCardsItemMultilineClickable', {
+  template: `<md-cards-item-multiline disabled="$ctrl.disabled">
+              <button md-button-composite
+                      ng-click="$ctrl.onClick({value: $ctrl.value})"
+                      ng-disabled="$ctrl.disabled"
+                      md-disabled="{{$ctrl.disabled}}"
+                      theme="tracking-dark"
+                      ng-transclude>
+              </button>
+            </md-cards-item-multiline>`,
+  transclude: true,
+  bindings: {
+    disabled: '<',
+    onClick: '&',
+    value: '<'
+  }
+});
+
+mdApp.component('mdWallItemMultiline', {
+  template: `<md-wall-cell md-width="{{$ctrl.mdWidth}}">
+              <md-wall-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
+              </md-wall-cell-tile>
+            </md-wall-cell>`,
+  transclude: true,
+  bindings: {
+    mdWidth: '<',
+    disabled: '<'
+  }
+});
+
+mdApp.component('mdWallItemMultilineClickable', {
+  template: `<md-wall-item-multiline md-width="$ctrl.mdWidth" disabled="$ctrl.disabled">
+              <button md-button-composite
+                      ng-click="$ctrl.onClick({value: $ctrl.value})"
+                      ng-disabled="$ctrl.disabled"
+                      md-disabled="{{$ctrl.disabled}}"
+                      theme="tracking-dark"
+                      ng-transclude>
+              </button>
+            </md-wall-item-multiline>`,
+  transclude: true,
+  bindings: {
+    mdWidth: '<',
+    disabled: '<',
+    onClick: '&',
+    value: '<'
+  }
+});
+
+mdApp.component('mdListItem', {
+  template: `<md-list-cell>
+              <md-list-cell-tile lines="{{$ctrl.lines}}" side="{{$ctrl.iconPosition}}" dialog="{{$ctrl.dialog}}">
+                <md-primary md-content="{{$ctrl.first}}" md-disabled="{{$ctrl.disabled}}"></md-primary>
+                <md-secondary md-content="{{$ctrl.second}}" md-disabled="{{$ctrl.disabled}}" ng-if="$ctrl.second"></md-secondary>
+                <md-secondary md-content="{{$ctrl.third}}" md-disabled="{{$ctrl.disabled}}" ng-if="$ctrl.third"></md-secondary>
+                <md-actions side="{{$ctrl.iconPosition}}" lines="{{$ctrl.lines}}" dialog="{{$ctrl.dialog}}" ng-if="$ctrl.icon">
+                  <md-base md-icon md-content="{{$ctrl.icon}}" md-disabled="{{$ctrl.disabled}}" md-pad="12"></md-base>
+                </md-actions>
+              </md-list-cell-tile>
+            </md-list-cell>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    ctrl.$onChanges = function(changes) {
+      if (ctrl.first && !ctrl.second && !ctrl.third) {
+        ctrl.lines = 1;
+      }
+      if (ctrl.second && ctrl.second && ctrl.third) {
+        ctrl.lines = 3;
+      }
+      if ((ctrl.first && ctrl.second && !ctrl.third) || (ctrl.first && !ctrl.second && ctrl.third)) {
+        ctrl.lines = 2;
+      }
+    };
+  }],
+  bindings: {
+    first: '<',
+    second: '<',
+    third: '<',
+    icon: '<',
+    iconPosition: '<',
+    textPosition: '<',
+    dialog: '<',
+    disabled: '<'
+  }
+});
+
+mdApp.component('mdListItemClickable', {
+  template: `<button md-button-composite
+                     ng-click="$ctrl.onClick({value: $ctrl.value})"
+                     ng-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
+                     md-active="{{($ctrl.value === $ctrl.sample)}}"
+                     theme="tracking-dark">
+              <md-list-item first="$ctrl.first"
+                            second="$ctrl.second"
+                            third="$ctrl.third"
+                            icon="$ctrl.icon"
+                            icon-position="$ctrl.iconPosition"
+                            text-position="$ctrl.textPosition"
+                            dialog="$ctrl.dialog"
+                            disabled="$ctrl.disabled"></md-list-item>
+            </button>`,
+  bindings: {
+    first: '<',
+    second: '<',
+    third: '<',
+    icon: '<',
+    iconPosition: '<',
+    textPosition: '<',
+    dialog: '<',
+    disabled: '<',
+    onClick: '&',
+    value: '<',
+    sample: '<'
+  }
+});
+
+mdApp.directive('mdCustomValidators', [function() {
   return {
-    priority: 100,
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdError', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.originalColor) {
-            attrs.$set('originalColor', element.css('color'));
+    scope: {
+      mdCustomValidators: '&'
+    },
+    require: 'ngModel',
+    link: function(scope, element, attrs, ctrl) {
+      var validators = scope.mdCustomValidators();
+      if (validators) {
+        angular.forEach(validators, function(callback, key) {
+          ctrl.$validators[key] = callback;
+        });
+      }
+    }
+  };
+}]);
+
+mdApp.component('mdTextInput', {
+  template: `<md-list-cell>
+              <md-list-cell-tile>
+                <md-input-label focus="{{$ctrl.focused}}"
+                                md-content="{{$ctrl.label}}"
+                                md-disabled="{{$ctrl.disabled}}"
+                                md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
+                </md-input-label>
+                <input name="{{$ctrl.name}}"
+                       type="text"
+                       md-input-text
+                       md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"
+                       ng-blur="$ctrl.blur()"
+                       ng-focus="$ctrl.focus()"
+                       ng-model="$ctrl.value"
+                       ng-model-options="$ctrl.options"
+                       ng-disabled="$ctrl.disabled"
+                       md-disabled="{{$ctrl.disabled}}"
+                       ng-required="$ctrl.required"
+                       ng-trim="$ctrl.trim"
+                       ng-minlength="$ctrl.minlength"
+                       ng-maxlength="$ctrl.maxlength"
+                       ng-pattern="$ctrl.pattern"
+                       md-custom-validators="$ctrl.custom"
+                       ng-change="$ctrl.onChange({name: $ctrl.name, value: $ctrl.value})">
+                <md-input-helper md-content="{{$ctrl.instruction}}"
+                                 md-disabled="{{$ctrl.disabled}}"
+                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
+                </md-input-helper>
+              </md-list-cell-tile>
+            </md-list-cell>`,
+  require: {'form': '^^mdForm'},
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    ctrl.focus = function() {
+      ctrl.focused = true;
+    };
+    ctrl.blur = function() {
+      if (ctrl.input && ctrl.input.$viewValue) {
+        return;
+      }
+      ctrl.focused = false;
+    };
+    ctrl.$postLink = function() {
+      ctrl.input = ctrl.form.getInput(ctrl);
+      ctrl.focused = false;
+      ctrl.instruction = ctrl.instructions['info'];
+    };
+    ctrl.$doCheck = function() {
+      if (ctrl.input) {
+        if (ctrl.input.$pristine && ctrl.input.$untouched && ctrl.input.$viewValue) {
+          ctrl.focus();
+        }
+        ctrl.instruction = '';
+        if (ctrl.input.$dirty && ctrl.input.$invalid) {
+          angular.forEach(ctrl.input.$error, function(value, key) {
+            if (value) {
+              ctrl.instruction = ctrl.instruction + ' ' + ctrl.instructions[key];
+            }
+          });
+        }
+        if (!ctrl.instruction) {
+          ctrl.instruction = ctrl.instructions['info'];
+        }
+      }
+    };
+  }],
+  bindings: {
+    label: '<',
+    name: '<',
+    value: '<',
+    onChange: '&',
+    required: '<',
+    trim: '<',
+    minlength: '<',
+    maxlength: '<',
+    pattern: '<',
+    custom: '<',
+    options: '<',
+    instructions: '<',
+    disabled: '<'
+  }
+});
+
+mdApp.component('mdSelectionInput', {
+  template: `<md-list-cell>
+              <md-list-cell-tile>
+                <md-input-label focus="{{$ctrl.focused}}"
+                                md-content="{{$ctrl.label}}"
+                                md-disabled="{{$ctrl.disabled}}"
+                                md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
+                </md-input-label>
+                <button md-button-composite
+                        ng-click="$ctrl.onClick({value: $ctrl.value})"
+                        ng-disabled="$ctrl.disabled"
+                        md-disabled="{{$ctrl.disabled}}"
+                        theme="tracking-dark">
+                  <md-input-selection name="{{$ctrl.name}}"
+                              type="text"
+                              md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"
+                              ng-blur="$ctrl.blur()"
+                              ng-focus="$ctrl.focus()"
+                              ng-model="$ctrl.value"
+                              ng-model-options="{allowInvalid: false}"
+                              ng-disabled="$ctrl.disabled"
+                              md-disabled="{{$ctrl.disabled}}"
+                              ng-required="$ctrl.required"
+                              ng-trim="$ctrl.trim"
+                              ng-minlength="$ctrl.minlength"
+                              ng-maxlength="$ctrl.maxlength"
+                              ng-pattern="$ctrl.pattern"
+                              ng-change="$ctrl.change()"
+                              md-content="{{$ctrl.display}}"></md-input-selection>
+                  <md-input-selection-icon
+                              md-content="arrow_drop_down"
+                              md-disabled="{{$ctrl.disabled}}"
+                              md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-input-selection-icon>
+                </button>
+                <md-input-helper md-content="{{$ctrl.instruction}}"
+                                 md-disabled="{{$ctrl.disabled}}"
+                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
+                </md-input-helper>
+              </md-list-cell-tile>
+            </md-list-cell>`,
+  require: {'form': '^^mdForm'},
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    ctrl.focus = function() {
+      ctrl.focused = true;
+    };
+    ctrl.blur = function() {
+      if (ctrl.input && ctrl.input.$viewValue) {
+        return;
+      }
+      ctrl.focused = false;
+    };
+    ctrl.$postLink = function() {
+      ctrl.input = ctrl.form.getInput(ctrl);
+      ctrl.focused = false;
+      ctrl.instruction = ctrl.instructions['info'];
+    };
+    ctrl.$doCheck = function() {
+      if (ctrl.input) {
+        if (ctrl.input.$viewValue) {
+          ctrl.focus();
+        }
+        ctrl.instruction = '';
+        if (ctrl.input.$dirty && ctrl.input.$invalid) {
+          angular.forEach(ctrl.input.$error, function(value, key) {
+            if (value) {
+              ctrl.instruction = ctrl.instruction + ' ' + ctrl.instructions[key];
+            }
+          });
+        }
+        if (!ctrl.instruction) {
+          ctrl.instruction = ctrl.instructions['info'];
+        }
+      }
+    };
+  }],
+  bindings: {
+    label: '<',
+    name: '<',
+    value: '<',
+    display: '<',
+    onChange: '&',
+    onClick: '&',
+    required: '<',
+    trim: '<',
+    minlength: '<',
+    maxlength: '<',
+    pattern: '<',
+    instructions: '<',
+    disabled: '<'
+  }
+});
+
+mdApp.component('mdRadioInput', {
+  template: `<button md-button-composite
+                     ng-click="$ctrl.onSelect({name: $ctrl.name, value: $ctrl.sample})"
+                     ng-disabled="$ctrl.disabled"
+                     md-disabled="{{$ctrl.disabled}}"
+                     name="{{$ctrl.name}}"
+                     ng-model="$ctrl.value"
+                     ng-required="$ctrl.required"
+                     theme="tracking-dark">
+              <md-list-cell>
+                <md-list-cell-tile lines="{{$ctrl.lines}}" side="left">
+                  <md-primary md-content="{{$ctrl.first}}"
+                              md-disabled="{{$ctrl.disabled}}"
+                              md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-primary>
+                  <md-secondary md-content="{{$ctrl.second}}" ng-if="$ctrl.second"
+                                md-disabled="{{$ctrl.disabled}}"
+                                md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-secondary>
+                  <md-secondary md-content="{{$ctrl.third}}" ng-if="$ctrl.third"
+                                md-disabled="{{$ctrl.disabled}}"
+                                md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></md-secondary>
+                  <md-actions side="left" lines="{{$ctrl.lines}}" dialog="{{$ctrl.dialog}}">
+                    <md-base md-icon md-pad="12"
+                             md-fade="{{($ctrl.value !== $ctrl.sample)}}"
+                             md-disabled="{{$ctrl.disabled}}"
+                             md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">radio_button_checked</md-base>
+                  </md-actions>
+                  <md-actions side="left" lines="{{$ctrl.lines}}" dialog="{{$ctrl.dialog}}">
+                    <md-base md-icon md-pad="12"
+                             md-fade="{{($ctrl.value === $ctrl.sample)}}"
+                             md-disabled="{{$ctrl.disabled}}"
+                             md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">radio_button_unchecked</md-base>
+                  </md-actions>
+                </md-list-cell-tile>
+              </md-list-cell>
+            </button>`,
+  require: {'form': '^^mdForm'},
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    ctrl.$postLink = function() {
+      ctrl.input = ctrl.form.getInput(ctrl);
+    };
+    ctrl.$onChanges = function(changes) {
+      if (ctrl.first && !ctrl.second && !ctrl.third) {
+        ctrl.lines = 1;
+      }
+      if (ctrl.second && ctrl.second && ctrl.third) {
+        ctrl.lines = 3;
+      }
+      if ((ctrl.first && ctrl.second && !ctrl.third) || (ctrl.first && !ctrl.second && ctrl.third)) {
+        ctrl.lines = 2;
+      }
+    };
+  }],
+  bindings: {
+    name: '<',
+    onSelect: '&',
+    first: '<',
+    second: '<',
+    third: '<',
+    value: '<',
+    sample: '<',
+    required: '<',
+    disabled: '<'
+  }
+});
+
+mdApp.component('mdForm', {
+  template: `<form md-base
+                   name="{{$ctrl.name}}"
+                   novalidate
+                   ng-transclude>
+             </form>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    ctrl.inputs = {};
+    ctrl.submit = function() {
+      if ($scope[ctrl.name].$invalid) {
+        angular.forEach($scope[ctrl.name], function(value, key) {
+          if (typeof value === 'object' && value.hasOwnProperty('$modelValue') && (value.$pristine || value.$untouched)) {
+            value.$setDirty();
+            value.$setTouched();
           }
-          var originalBorderBottomColor = element.css('border-bottom-color');
-          if (originalBorderBottomColor) {
-            attrs.$set('originalBorderBottomColor', originalBorderBottomColor);
-            element.css({'border-bottom-color': 'rgba(255, 0, 0, 0.87)'});
+        });
+        return false;
+      } else {
+        return true;
+        //ctrl.onSubmit({'value': $scope[ctrl.name]});
+      }
+    };
+    ctrl.registerInput = function(input) {
+      ctrl.inputs[input.name] = input;
+      //ctrl.inputs.push(input);
+    };
+    ctrl.getInput = function(input) {
+      return $scope[ctrl.name][input.name];
+    };
+    ctrl.$onInit = function() {
+      ctrl.onInit({'validator': ctrl.submit});
+    };
+  }],
+  bindings: {
+    onInit: '&',
+    onSubmit: '&',
+    name: '<'
+  }
+});
+
+/*--------------------------------------------------Composites--------------------------------------------------*/
+
+mdApp.component('mdCartButton', {
+  template: `<md-list-item-multiline>
+              <md-action side="center">
+                <button md-button-text-raised
+                        md-raised="{{!$ctrl.disabled}}"
+                        ng-disabled="$ctrl.disabled"
+                        md-disabled="{{$ctrl.disabled}}"
+                        md-content="{{$ctrl.name}}"
+                        ng-click="$ctrl.onClick({value: $ctrl.value})"></button>
+              </md-action>
+            </md-list-item-multiline>`,
+  bindings: {
+    name: '<',
+    value: '<',
+    disabled: '<',
+    onClick: '&'
+  }
+});
+
+mdApp.component('mdCartPage', {
+  template: `<md-page vertical-scroll="scroll" top="56px" position="{{$ctrl.position}}" ng-transclude>
+            </md-page>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.positionPage = function() {
+      ctrl.position = (ctrl.page - ctrl.currentPage) * 100;
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.positionPage();
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      if (changes.currentPage && changes.currentPage.currentValue) {
+        ctrl.positionPage();
+      }
+    };
+  }],
+  bindings: {
+    page: '<',
+    currentPage: '<'
+  }
+});
+
+mdApp.component('mdCartDelete', {
+  template: `<md-confirmation active="$ctrl.dialog" on-close="$ctrl.onClose({value: $ctrl.delete})">
+              <md-base md-pad="24">
+                <md-base md-font="title"
+                         md-pad="0,0,20,0"
+                         md-content="{{$ctrl.settings.modals.cart.delete.title}}"></md-base>
+                <md-base md-font="notification"
+                         md-content="{{$ctrl.settings.modals.cart.delete.message}}"></md-base>
+              </md-base>
+              <md-base md-pad="2,4">
+                <md-action side="right">
+                  <button md-button-text-flat
+                          ng-click="$ctrl.cancel()"
+                          md-content="{{$ctrl.settings.modals.cart.delete.actions.cancel}}"></button>
+                  <button md-button-text-flat
+                          ng-click="$ctrl.ok()"
+                          md-content="{{$ctrl.settings.modals.cart.delete.actions.ok}}"></button>
+                </md-action>
+              </md-base>
+            </md-confirmation>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.cancel = function() {
+      ctrl.delete = false;
+      ctrl.dialog = false;
+    };
+    
+    ctrl.ok = function() {
+      ctrl.delete = true;
+      ctrl.dialog = false;
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.dialog = true;
+      ctrl.delete = false;
+    };
+  }],
+  bindings: {
+    settings: '<',
+    onClose: '&'
+  }
+});
+
+mdApp.component('mdCartCountries', {
+  template: `<md-simple on-close="$ctrl.onSelect({value: $ctrl.option})" active="!$ctrl.option">
+              <md-page vertical-scroll="scroll">
+                <md-list>
+                  <md-list-item-clickable ng-repeat="option in $ctrl.countries.data"
+                                          first="option.name"
+                                          value="option.code"
+                                          sample="$ctrl.sample"
+                                          disabled="option.disabled"
+                                          dialog="true"
+                                          on-click="$ctrl.selectOption(value)">
+                  </md-list-item-clickable>
+                  <button md-button-composite
+                          ng-if="$ctrl.countries.has_more"
+                          ng-click="$ctrl.loadMoreCountries()"
+                          ng-disabled="$ctrl.disabled"
+                          md-disabled="{{$ctrl.disabled}}"
+                          theme="tracking-dark">
+                    <md-list-cell>
+                      <md-list-cell-tile>
+                          <md-action side="center">
+                            <md-base md-pad="4"
+                                     md-icon="avatar"
+                                     md-content="refresh"></md-base>
+                          </md-action>
+                      </md-list-cell-tile>
+                    </md-list-cell>
+                  </button>
+                </md-list>
+              </md-page>
+            </md-simple>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    var getCountries = function() {
+      var remaining = ctrl.settings.countries.length - ctrl.countries.data.length;
+      var end;
+      if (remaining > 50) {
+        end = ctrl.countries.data.length + 50;
+        ctrl.countries.has_more = true;
+      } else {
+        end = ctrl.countries.data.length + remaining;
+        ctrl.countries.has_more = false;
+      }
+      ctrl.countries.data.push.apply(ctrl.countries.data, ctrl.settings.countries.slice(ctrl.countries.data.length, end));
+    };
+    
+    ctrl.loadMoreCountries = function() {
+      if (ctrl.countries.has_more) {
+        getCountries();
+      }
+    };
+    
+    ctrl.selectOption = function(value) {
+      ctrl.option = value;
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.option = false;
+      ctrl.countries = {'data': [], 'has_more': false};
+      getCountries();
+    };
+  }],
+  bindings: {
+    settings: '<',
+    sample: '<',
+    onSelect: '&'
+  }
+});
+
+mdApp.component('mdCartSummary', {
+  template: `<md-cards-item-multiline disabled="true">
+              <md-base md-pad="24,16">
+                <md-base md-font="headline"
+                         md-content="{{$ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()]}}"></md-base>
+                <md-base md-font="secondary" ng-if="$ctrl.cart.id"
+                         md-content="{{$ctrl.cart.id}}"></md-base>
+                <md-base md-font="notification" ng-if="$ctrl.note"
+                         md-pad="16,0,0,0"
+                         md-content="{{$ctrl.note}}"></md-base>
+              </md-base>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    cart: '<',
+    note: '<'
+  }
+});
+
+mdApp.component('mdCartShippingAddress', {
+  template: `<md-cards-item-multiline disabled="true">
+              <md-base md-pad="24,16">
+                <md-base md-font="headline"
+                         md-content="{{$ctrl.cart.shipping.name}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.address.line1}}"></md-base>
+                <md-base md-font="secondary" ng-if="$ctrl.cart.shipping.address.line2"
+                         md-content="{{$ctrl.cart.shipping.address.line2}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.address.city + ', ' + $ctrl.cart.shipping.address.state + ', ' + $ctrl.cart.shipping.address.postal_code + ', ' + $ctrl.cart.shipping.address.country}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.email}}"></md-base>
+                <md-base md-font="secondary"
+                         md-content="{{$ctrl.cart.shipping.phone}}"></md-base>
+              </md-base>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    cart: '<'
+  }
+});
+
+mdApp.component('mdCartItemProduct', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-base md-font="secondary"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{($ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]) + '   (' + $ctrl.item.quantity + 'X ' + ($ctrl.item.price | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]) + ')'}}"></md-base>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemShipping', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.parent"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.delivery_estimate"
+                       md-content="{{$ctrl.item.delivery_estimate}}"></md-base>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></md-base>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemTax', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.parent"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></md-base>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemDiscount', {
+  template: `<md-base md-pad="24,16">
+              <md-base md-font="headline"
+                       md-content="{{$ctrl.item.description}}"></md-base>
+              <md-base md-font="secondary" ng-if="$ctrl.item.parent"
+                       md-content="{{$ctrl.item.parent}}"></md-base>
+              <md-base md-font="notification"
+                       md-pad="16,0,0,0"
+                       md-content="{{$ctrl.item.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.item.currency.toUpperCase()]}}"></md-base>
+            </md-base>`,
+  bindings: {
+    settings: '<',
+    item: '<'
+  }
+});
+
+mdApp.component('mdCartItemView', {
+  template: `<md-cards-item-multiline disabled="true">
+              <md-cart-item-product ng-if="($ctrl.value.type === 'sku')"
+                                    settings="$ctrl.settings"
+                                    item="$ctrl.value"></md-cart-item-product>
+              <md-cart-item-shipping ng-if="($ctrl.value.type === 'shipping')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-shipping>
+              <md-cart-item-tax ng-if="($ctrl.value.type === 'tax')"
+                                settings="$ctrl.settings"
+                                item="$ctrl.value"></md-cart-item-tax>
+              <md-cart-item-discount ng-if="($ctrl.value.type === 'discount')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-discount>
+            </md-cards-item-multiline>`,
+  bindings: {
+    settings: '<',
+    value: '<'
+  }
+});
+
+mdApp.component('mdCartItemClickable', {
+  template: `<md-cards-item-multiline-clickable value="$ctrl.value"
+                                                on-click="$ctrl.onClick({productId: value.product, skuId: value.parent})">
+              <md-cart-item-product ng-if="($ctrl.value.type === 'sku')"
+                                    settings="$ctrl.settings"
+                                    item="$ctrl.value"></md-cart-item-product>
+              <md-cart-item-shipping ng-if="($ctrl.value.type === 'shipping')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-shipping>
+              <md-cart-item-tax ng-if="($ctrl.value.type === 'tax')"
+                                settings="$ctrl.settings"
+                                item="$ctrl.value"></md-cart-item-tax>
+              <md-cart-item-discount ng-if="($ctrl.value.type === 'discount')"
+                                     settings="$ctrl.settings"
+                                     item="$ctrl.value"></md-cart-item-discount>
+            </md-cards-item-multiline-clickable>`,
+  bindings: {
+    settings: '<',
+    value: '<',
+    onClick: '&'
+  }
+});
+
+mdApp.component('mdCartEmpty', {
+  template: `<md-cart-page page="-1" current-page="$ctrl.step">
+              <md-list>
+                <md-list-item-multiline>
+                  <md-base md-font="display1" md-misc="textCenter" md-pad="0,24" md-content="{{$ctrl.settings.modals.cart.empty.action}}">
+                  </md-base>
+                </md-list-item-multiline>
+              </md-list>
+            </md-cart-page>`,
+  bindings: {
+    settings: '<',
+    step: '<'
+  }
+});
+
+mdApp.component('mdCartProducts', {
+  template: `<md-cart-page page="1" current-page="$ctrl.step">
+              <md-cards>
+                <md-cart-item-clickable ng-repeat="item in $ctrl.cart.items"
+                                        value="item"
+                                        settings="$ctrl.settings"
+                                        on-click="$ctrl.onSelect({productId: productId, skuId: skuId})">
+                </md-cart-item-clickable>
+                <md-cart-summary settings="$ctrl.settings"
+                                 cart="$ctrl.cart"
+                                 note="$ctrl.settings.modals.cart.products.note">
+                </md-cart-summary>
+                <md-cart-button name="$ctrl.settings.modals.cart.products.action"
+                                disabled="$ctrl.disabled"
+                                on-click="$ctrl.onSubmit()"></md-cart-button>
+              </md-cards>
+            </md-cart-page>`,
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
+    onSelect: '&',
+    onSubmit: '&'
+  }
+});
+
+mdApp.component('mdCartShipping', {
+  template: `<md-cart-page page="2" current-page="$ctrl.step">
+              <md-list>
+                <md-list-subheader md-content="{{$ctrl.settings.modals.cart.shipping.label}}"></md-list-subheader>
+                <md-form name="'cartShippingForm'" on-init="$ctrl.register(validator)">
+                  <md-selection-input name="'country'"
+                                      required="true"
+                                      trim="true"
+                                      disabled="$ctrl.disabled"
+                                      label="$ctrl.settings.modals.cart.shipping.country.label"
+                                      instructions="$ctrl.settings.modals.cart.shipping.country.instructions"
+                                      value="$ctrl.cart.shipping.address.country"
+                                      display="$ctrl.cart.shipping.address.country | formatCountry:$ctrl.settings.countries"
+                                      on-click="$ctrl.onOpenCountries({value: value})"></md-selection-input>
+                  <md-text-input name="'state'"
+                                 required="true"
+                                 trim="true"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.state.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.state.instructions"
+                                 value="$ctrl.cart.shipping.address.state"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'city'"
+                                 required="true"
+                                 trim="true"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.city.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.city.instructions"
+                                 value="$ctrl.cart.shipping.address.city"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'postal_code'"
+                                 required="true"
+                                 trim="true"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.postal_code.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.postal_code.instructions"
+                                 value="$ctrl.cart.shipping.address.postal_code"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'line1'"
+                                 required="true"
+                                 trim="true"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.line1.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.line1.instructions"
+                                 value="$ctrl.cart.shipping.address.line1"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'line2'"
+                                 required="false"
+                                 trim="true"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.line2.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.line2.instructions"
+                                 value="$ctrl.cart.shipping.address.line2"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'name'"
+                                 required="true"
+                                 trim="true"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.name.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.name.instructions"
+                                 value="$ctrl.cart.shipping.name"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'email'"
+                                 required="true"
+                                 trim="true"
+                                 pattern="$ctrl.validEmail"
+                                 options="{updateOn: 'blur'}"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.email.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.email.instructions"
+                                 value="$ctrl.cart.email"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'phone'"
+                                 required="true"
+                                 trim="true"
+                                 pattern="$ctrl.validPhone"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.shipping.phone.label"
+                                 instructions="$ctrl.settings.modals.cart.shipping.phone.instructions"
+                                 value="$ctrl.cart.shipping.phone"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-cart-button name="$ctrl.settings.modals.cart.shipping.action"
+                                  disabled="$ctrl.disabled"
+                                  on-click="$ctrl.submit()"></md-cart-button>
+                </md-form>
+              </md-list>
+            </md-cart-page>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.validEmail = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+    
+    ctrl.validPhone = /^\+{0,1}[0-9]+$/;
+    
+    ctrl.register = function(validator) {
+      ctrl.validate = validator;
+    };
+    
+    ctrl.submit = function() {
+      if (ctrl.validate()) {
+        ctrl.onSubmit();
+      }
+    };
+  }],
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
+    disabled: '<',
+    onOpenCountries: '&',
+    onUpdate: '&',
+    onSubmit: '&'
+  }
+});
+
+mdApp.component('mdCartShippingMethods', {
+  template: `<md-cart-page page="3" current-page="$ctrl.step">
+              <md-list>
+                <md-list-subheader md-content="{{$ctrl.settings.modals.cart.shipping_methods.label}}"></md-list-subheader>
+                <md-form name="'cartShippingMethodsForm'" on-init="$ctrl.register(validator)">
+                  <md-radio-input ng-repeat="item in $ctrl.cart.shipping_methods"
+                                  name="'shipping_method'"
+                                  value="$ctrl.cart.selected_shipping_method"
+                                  sample="item.id"
+                                  first="item.amount | formatCurrency:$ctrl.settings.currencies[item.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[item.currency.toUpperCase()]"
+                                  second="item.description"
+                                  disabled="$ctrl.disabled"
+                                  on-select="$ctrl.onUpdate({name: name, value: value})"></md-radio-input>
+                  <md-cart-button name="$ctrl.settings.modals.cart.shipping_methods.action"
+                                  disabled="$ctrl.disabled"
+                                  on-click="$ctrl.submit()"></md-cart-button>
+                </md-form>
+              </md-list>
+            </md-cart-page>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.register = function(validator) {
+      ctrl.validate = validator;
+    };
+    
+    ctrl.submit = function() {
+      if (ctrl.validate()) {
+        ctrl.onSubmit();
+      }
+    };
+  }],
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
+    disabled: '<',
+    onUpdate: '&',
+    onSubmit: '&'
+  }
+});
+
+mdApp.component('mdCartPay', {
+  template: `<md-cart-page page="4" current-page="$ctrl.step">
+              <md-list>
+                <md-form name="'cartPaymentForm'" on-init="$ctrl.register(validator)">
+                  <md-text-input name="'number'"
+                                 required="true"
+                                 trim="true"
+                                 custom="$ctrl.number"
+                                 options="{updateOn: 'blur'}"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.pay.number.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.number.instructions"
+                                 value="$ctrl.cart.card.number"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'exp_month'"
+                                 required="true"
+                                 trim="true"
+                                 minlength="2"
+                                 maxlength="2"
+                                 custom="$ctrl.exp_month"
+                                 options="{updateOn: 'blur'}"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.pay.exp_month.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.exp_month.instructions"
+                                 value="$ctrl.cart.card.exp_month"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'exp_year'"
+                                 required="true"
+                                 trim="true"
+                                 minlength="4"
+                                 maxlength="4"
+                                 custom="$ctrl.exp_year"
+                                 options="{updateOn: 'blur'}"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.pay.exp_year.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.exp_year.instructions"
+                                 value="$ctrl.cart.card.exp_year"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-text-input name="'cvc'"
+                                 required="true"
+                                 trim="true"
+                                 minlength="3"
+                                 maxlength="3"
+                                 custom="$ctrl.cvc"
+                                 options="{updateOn: 'blur'}"
+                                 disabled="$ctrl.disabled"
+                                 label="$ctrl.settings.modals.cart.pay.cvc.label"
+                                 instructions="$ctrl.settings.modals.cart.pay.cvc.instructions"
+                                 value="$ctrl.cart.card.cvc"
+                                 on-change="$ctrl.onUpdate({name: name, value: value})"></md-text-input>
+                  <md-cart-button name="$ctrl.settings.modals.cart.pay.action + ' ' + ($ctrl.cart.amount | formatCurrency:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.cart.currency.toUpperCase()])"
+                                  disabled="$ctrl.disabled"
+                                  on-click="$ctrl.submit()"></md-cart-button>
+                </md-form>
+              </md-list>
+            </md-cart-page>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    ctrl.number = {
+      'validateCardNumber': function(modelValue, viewValue) {
+        return Stripe.card.validateCardNumber(modelValue);
+      },
+      'validateCardType': function(modelValue, viewValue) {
+        if (modelValue) {
+          var cardType = Stripe.card.cardType(modelValue);
+          if (cardType === 'Unknown') {
+            return false;
+          } else {
+            return true;
           }
-          element.css({'color': 'rgba(255, 0, 0, 0.87)'});
+        }
+      }
+    };
+    
+    ctrl.exp_month = {
+      'validateExpiry': function(modelValue, viewValue) {
+        var year = new Date().getFullYear();
+        return Stripe.card.validateExpiry(modelValue, (year + 1).toString());
+      }
+    };
+    
+    ctrl.exp_year = {
+      'validateExpiry': function(modelValue, viewValue) {
+        return Stripe.card.validateExpiry('12', modelValue);
+      }
+    };
+    
+    ctrl.cvc = {
+      'validateCVC': function(modelValue, viewValue) {
+        return Stripe.card.validateCVC(modelValue);
+      }
+    };
+    
+    ctrl.register = function(validator) {
+      ctrl.validate = validator;
+    };
+    
+    ctrl.submit = function() {
+      if (ctrl.validate()) {
+        ctrl.onSubmit();
+      }
+    };
+  }],
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<',
+    disabled: '<',
+    onUpdate: '&',
+    onSubmit: '&'
+  }
+});
+
+mdApp.component('mdCartEnd', {
+  template: `<md-cart-page page="5" current-page="$ctrl.step">
+              <md-cards>
+                <md-cart-shipping-address settings="$ctrl.settings"
+                                          cart="$ctrl.cart">
+                </md-cart-shipping-address>
+                <md-cart-item-view ng-repeat="item in $ctrl.cart.items"
+                                   value="item"
+                                   settings="$ctrl.settings">
+                </md-cart-item-view>
+                <md-cart-summary settings="$ctrl.settings"
+                                 cart="$ctrl.cart"
+                                 note="$ctrl.settings.modals.cart.end.note">
+                </md-cart-summary>
+              </md-cards>
+            </md-cart-page>`,
+  bindings: {
+    settings: '<',
+    cart: '<',
+    step: '<'
+  }
+});
+
+mdApp.component('mdCart', {
+  template: `<md-full-screen side="'right'" active="$ctrl.dialog" on-close="$ctrl.onExit()">
+              <md-app-bar>
+                <md-app-icon icon="'shopping_cart'"></md-app-icon>
+                <md-actions side="left" lines="4">
+                  <button md-button-icon-flat
+                          md-content="arrow_back"
+                          ng-disabled="$ctrl.disabled"
+                          md-disabled="{{$ctrl.disabled}}"
+                          ng-click="$ctrl.closeCart()"></button>
+                </md-actions>
+                <md-actions side="right" lines="4" ng-if="(($ctrl.step > 0) && ($ctrl.step < 5))">
+                  <button md-button-icon-flat
+                          md-content="delete"
+                          ng-disabled="$ctrl.disabled"
+                          md-disabled="{{$ctrl.disabled}}"
+                          ng-click="$ctrl.deleteDialog = true"></button>
+                </md-actions>
+              </md-app-bar>
+              <md-cart-empty settings="$ctrl.settings"
+                             step="$ctrl.step"
+                             ng-if="($ctrl.step < 2)"></md-cart-empty>
+              <md-cart-products settings="$ctrl.settings"
+                                ng-if="(($ctrl.step > -1) && ($ctrl.step < 3))"
+                                step="$ctrl.step"
+                                cart="$ctrl.cart"
+                                on-select="$ctrl.onOpenProduct({productId: productId, skuId: skuId})"
+                                on-submit="$ctrl.stepTwo()"></md-cart-products>
+              <md-cart-shipping settings="$ctrl.settings"
+                                ng-if="(($ctrl.step > 0) && ($ctrl.step < 4))"
+                                step="$ctrl.step"
+                                cart="$ctrl.cart"
+                                disabled="$ctrl.disabled"
+                                on-open-countries="$ctrl.openCountries({value: value})"
+                                on-update="$ctrl.updateCart(name, value)"
+                                on-submit="$ctrl.stepThree()"></md-cart-shipping>
+              <md-cart-shipping-methods settings="$ctrl.settings"
+                                        ng-if="(($ctrl.step > 1) && ($ctrl.step < 5))"
+                                        step="$ctrl.step"
+                                        cart="$ctrl.cart"
+                                        disabled="$ctrl.disabled"
+                                        on-update="$ctrl.updateCart(name, value)"
+                                        on-submit="$ctrl.stepFour()"></md-cart-shipping-methods>
+              <md-cart-pay settings="$ctrl.settings"
+                           ng-if="(($ctrl.step > 2) && ($ctrl.step < 6))"
+                           step="$ctrl.step"
+                           cart="$ctrl.cart"
+                           disabled="$ctrl.disabled"
+                           on-update="$ctrl.updateCart(name, value)"
+                           on-submit="$ctrl.stepFive()"></md-cart-pay>
+              <md-cart-end settings="$ctrl.settings"
+                           ng-if="($ctrl.step > 3)"
+                           step="$ctrl.step"
+                           cart="$ctrl.order"></md-cart-end>
+            </md-full-screen>
+            <md-cart-delete settings="$ctrl.settings"
+                            on-close="$ctrl.deleteCart(value)"
+                            ng-if="$ctrl.deleteDialog"></md-cart-delete>
+            <md-cart-countries settings="$ctrl.settings"
+                               sample="$ctrl.selectedCountry"
+                               ng-if="$ctrl.countriesDialog"
+                               on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
+  controller: ['$scope', '$element', '$attrs', '$timeout', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $timeout, mdCartFactory, mdIntercomFactory) {
+    var ctrl = this;
+    
+    ctrl.closeCart = function() {
+      ctrl.dialog = false;
+      $timeout(function() {ctrl.order = {};}, 300);
+    };
+    
+    ctrl.deleteCart = function(value) {
+      ctrl.deleteDialog = false;
+      if (value) {
+        ctrl.disabled = true;
+        mdCartFactory.deleteCart(function(response) {
+          ctrl.disabled = false;
+          ctrl.cart = mdCartFactory.getCart();
+          mdIntercomFactory.get('error')(response);
+        });
+      }
+    };
+    
+    ctrl.openCountries = function(value) {
+      ctrl.selectedCountry = value;
+      ctrl.countriesDialog = true;
+    };
+    
+    ctrl.updateCart = function(name, value) {
+      mdCartFactory.updateCart(name, value);
+      ctrl.cart = mdCartFactory.getCart();
+    };
+    
+    ctrl.selectCountry = function(value) {
+      if (value) {
+        ctrl.updateCart('country', value);
+      }
+      ctrl.countriesDialog = false;
+    };
+    
+    ctrl.stepTwo = function() {
+      $timeout(function() {ctrl.step = 2;});
+    };
+    
+    ctrl.stepThree = function() {
+      ctrl.disabled = true;
+      mdCartFactory.saveCart(function(response) {
+        if ((response.status > 199) && (response.status < 300)) {
+          $timeout(function() {ctrl.step = 3;});
+          $timeout(function() {ctrl.cart = mdCartFactory.getCart();}, 300);
         } else {
-          if (attrs.originalColor) {
-            element.css({'color': attrs.originalColor});
+          mdIntercomFactory.get('error')(response);
+        }
+        $timeout(function() {ctrl.disabled = false;}, 300);
+      });
+    };
+    
+    ctrl.stepFour = function() {
+      ctrl.disabled = true;
+      mdCartFactory.saveCart(function(response) {
+        if ((response.status > 199) && (response.status < 300)) {
+          $timeout(function() {ctrl.step = 4;});
+          $timeout(function() {ctrl.cart = mdCartFactory.getCart();}, 300);
+        } else {
+          mdIntercomFactory.get('error')(response);
+        }
+        $timeout(function() {ctrl.disabled = false;}, 300);
+      });
+    };
+    
+    ctrl.stepFive = function() {
+      ctrl.disabled = true;
+      mdCartFactory.payCart(function(response) {
+        if ((response.status > 199) && (response.status < 300)) {
+          ctrl.order = angular.merge({}, mdCartFactory.getCart());
+          $timeout(function() {ctrl.step = 5;});
+          $timeout(function() {
+            mdCartFactory.createCart(function(response) {
+              mdIntercomFactory.get('error')(response);
+            });
+            ctrl.cart = mdCartFactory.getCart();
+          }, 300);
+        } else {
+          mdIntercomFactory.get('error')(response);
+        }
+        $timeout(function() {ctrl.disabled = false;}, 300);
+      });
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.cart = mdCartFactory.getCart();
+      if (ctrl.cart.status === 'new') {
+        if (ctrl.cart.items.length > 0) {
+          ctrl.step = 1;
+        } else {
+          ctrl.step = -1;
+        }
+      } else if (ctrl.cart.status === 'created') {
+        if (ctrl.cart.shipping_methods.length > 0) {
+          ctrl.step = 3;
+        } else {
+          ctrl.step = 4;
+        }
+      } else if (ctrl.cart.status === 'paid') {
+        ctrl.step = 5;
+      }
+      ctrl.order = {};
+      ctrl.disabled = false;
+      ctrl.dialog = true;
+      ctrl.deleteDialog = false;
+      ctrl.countriesDialog = false;
+    };
+    
+    ctrl.$doCheck = function() {
+      if (ctrl.cart.status === 'new') {
+        if (ctrl.cart.items.length === 0) {
+          ctrl.step = -1;
+        }
+      } else if (ctrl.cart.status === 'created') {
+        if ((ctrl.cart.shipping_methods.length === 0) && (ctrl.step === 3)) {
+          ctrl.step = 4;
+        }
+      }
+    };
+  }],
+  bindings: {
+    settings: '<',
+    onOpenProduct: '&',
+    onExit: '&'
+  }
+});
+
+mdApp.component('mdSkuQuantity', {
+  template: `<md-list-cell>
+                  <input name="{{$ctrl.name}}"
+                         type="text"
+                         readonly
+                         md-input-number
+                         md-pad="4,56"
+                         md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"
+                         ng-model="$ctrl.value"
+                         ng-model-options="{allowInvalid: false}"
+                         ng-disabled="$ctrl.disabled"
+                         md-disabled="{{$ctrl.disabled}}"
+                         ng-required="$ctrl.required"
+                         ng-trim="$ctrl.trim"
+                         ng-min="$ctrl.min"
+                         ng-max="$ctrl.max"
+                         ng-step="$ctrl.step"
+                         ng-change="$ctrl.qchange()">
+                <md-actions side="left">
+                  <button md-button-icon-flat md-content="remove_shopping_cart" ng-click="$ctrl.remove()"
+                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
+                </md-actions>
+                <md-actions side="right">
+                  <button md-button-icon-flat md-content="add_shopping_cart" ng-click="$ctrl.add()"
+                          md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
+                </md-actions>
+            </md-list-cell>`,
+  require: {'form': '^^mdForm'},
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    ctrl.$postLink = function() {
+      ctrl.input = ctrl.form.getInput(ctrl);
+    };
+    ctrl.$onInit = function() {
+      if (isNaN(ctrl.min)) {
+        ctrl.min = 0;
+      }
+      if (isNaN(ctrl.max)) {
+        ctrl.max = Infinity;
+      }
+      if (isNaN(ctrl.step)) {
+        ctrl.step = 1;
+      }
+      if (isNaN(ctrl.value)) {
+        if (ctrl.required) {
+          ctrl.value = ctrl.min;
+        } else {
+          ctrl.value = '';
+        }
+      }
+      ctrl.onChange({'name': ctrl.name, 'value': ctrl.value});
+    };
+    ctrl.add = function() {
+      ctrl.value = parseFloat(ctrl.value) + parseFloat(ctrl.step);
+      ctrl.check();
+      ctrl.onChange({'name': ctrl.name, 'value': ctrl.value});
+    };
+    ctrl.remove = function() {
+      ctrl.value = parseFloat(ctrl.value) - parseFloat(ctrl.step);
+      ctrl.check();
+      ctrl.onChange({'name': ctrl.name, 'value': ctrl.value});
+    };
+    ctrl.check = function() {
+      ctrl.value = parseFloat(ctrl.value);
+      if (isNaN(ctrl.value)) {
+        ctrl.value = ctrl.min;
+      } else {
+        if (ctrl.value < ctrl.min) {
+          if (ctrl.required) {
+            ctrl.value = ctrl.min;
+          } else {
+            ctrl.value = '';
           }
-          if (attrs.originalBorderBottomColor) {
-            element.css({'border-bottom-color': attrs.originalBorderBottomColor});
+        } else if (ctrl.value > ctrl.max) {
+          ctrl.value = ctrl.max;
+        }
+      }
+    };
+  }],
+  bindings: {
+    name: '<',
+    value: '<',
+    onChange: '&',
+    required: '<',
+    trim: '<',
+    min: '<',
+    max: '<',
+    step: '<'
+  }
+});
+
+mdApp.component('mdSkuAttributeOptions', {
+  template: `<md-drawer-wide on-close="$ctrl.onSelect({attribute: $ctrl.attribute, option: $ctrl.option})" active="!$ctrl.option">
+              <md-page vertical-scroll="scroll">
+                <md-list>
+                  <md-list-subheader md-content="{{$ctrl.attribute}}"></md-list-subheader>
+                  <md-list-item-clickable ng-repeat="option in $ctrl.options"
+                                          first="option.name"
+                                          value="option.name"
+                                          sample="$ctrl.attributes[$ctrl.attribute]"
+                                          disabled="option.disabled"
+                                          on-click="$ctrl.selectOption(value)">
+                  </md-list-item-clickable>
+                </md-list>
+              </md-page>
+            </md-drawer-wide>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    var getOptions = function(product, skuAttributes, attribute) {
+      var skus = [];
+      var options = [];
+      var skuAttributesCopy = angular.merge({}, skuAttributes);
+      delete skuAttributesCopy[attribute];
+      angular.forEach(product.skus.data, function(sku) {
+        var matched = true;
+        angular.forEach(skuAttributesCopy, function(value, key) {
+          if (sku.attributes[key] !== value) {
+            matched = false;
+          }
+        });
+        if (matched) {
+          skus.push(sku);
+        }
+      });
+      angular.forEach(skus, function(sku) {
+        //var inventory = formatInventoryFilter(sku.inventory);
+        var inventory = 1;
+        var option = {
+          'name': sku.attributes[attribute],
+          'disabled': (!sku.active || (inventory === 0))
+        };
+        options.push(option);
+      });
+      return options;
+    };
+    
+    ctrl.selectOption = function(value) {
+      ctrl.option = value;
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.option = false;
+      ctrl.options = getOptions(ctrl.product, ctrl.attributes, ctrl.attribute);
+    };
+  }],
+  bindings: {
+    product: '<',
+    attributes: '<',
+    attribute: '<',
+    onSelect: '&'
+  }
+});
+
+mdApp.component('mdSkuAttributes', {
+  template: `<md-list md-seam>
+              <md-list-item-clickable ng-repeat="(name, value) in $ctrl.attributes"
+                                      first="name"
+                                      second="value"
+                                      value="name"
+                                      icon="'chevron_right'"
+                                      icon-position="'right'"
+                                      on-click="$ctrl.onSelect({value: value})"></md-list-item-clickable>
+            </md-list>`,
+  bindings: {
+    attributes: '<',
+    onSelect: '&'
+  }
+});
+
+mdApp.component('mdProductInfo', {
+  template: `<md-list md-seam>
+              <md-list-item-multiline>
+                <md-base md-font="headline" md-content="{{$ctrl.name}}"></md-base>
+                <md-base md-font="secondary" md-pad="0,0,16,0" md-content="{{$ctrl.id}}"></md-base>
+                <md-base md-font="body1" md-content="{{$ctrl.description}}" ng-if="$ctrl.description"></md-base>
+              </md-list-item-multiline>
+              <md-list-item first="$ctrl.price"
+                            second="$ctrl.inventory">
+              </md-list-item>
+            </md-list>`,
+  bindings: {
+    name: '<',
+    id: '<',
+    description: '<',
+    price: '<',
+    inventory: '<'
+  }
+});
+
+mdApp.component('mdProductImageSlider', {
+  template: `<md-carousel-frame md-get-height="-124" md-set-height="{{mdGetHeight}}" md-get-width>
+              <md-carousel-action side="left">
+                <button md-button-composite theme="tracking-dark" ng-click="$ctrl.rewind()">
+                  <md-base md-icon="avatar" md-pad="12" md-content="chevron_left"></md-bsae>
+                </button>
+              </md-carousel-action>
+              <md-carousel-action side="right">
+                <button md-button-composite theme="tracking-dark" ng-click="$ctrl.forward()">
+                  <md-base md-icon="avatar" md-pad="12" md-content="chevron_right"></md-bsae>
+                </button>
+              </md-carousel-action>
+              <md-carousel index="{{$ctrl.images.length}}" position="{{$ctrl.position}}" ng-swipe-left="$ctrl.forward()" ng-swipe-right="$ctrl.rewind()">
+                <md-carousel-cell ng-repeat="item in $ctrl.images"
+                                  md-width="{{mdCarouselWidth}}"
+                                  md-height="{{mdGetHeight}}">
+                  <img md-img
+                       ng-src="{{item}}"
+                       md-width="{{mdCarouselWidth}}"
+                       md-height="{{mdGetHeight}}">
+                </md-carousel-cell>
+              </md-carousel>
+            </md-carousel-frame>`,
+  controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
+    var ctrl = this;
+    
+    var getImages = function(skuImage, productImages) {
+      var images = [];
+      if (skuImage) {
+        images.push(skuImage);
+      }
+      if (productImages.length) {
+        angular.forEach(productImages, function(image) {
+          if (image !== skuImage) {
+            images.push(image);
+          }
+        });
+      }
+      return images;
+    };
+    ctrl.$onInit = function() {
+      ctrl.images = getImages(ctrl.skuImage, ctrl.productImages);
+      ctrl.position = 0;
+    };
+    ctrl.$onChanges = function(changes) {
+      if (changes.skuImage || changes.productImages) {
+        ctrl.images = getImages(ctrl.skuImage, ctrl.productImages);
+        ctrl.position = 0;
+      }
+    };
+    ctrl.forward = function() {
+      if ((ctrl.position + 1) < ctrl.images.length) {
+        ctrl.position = ctrl.position + 1;
+      }
+    };
+    ctrl.rewind = function() {
+      if ((ctrl.position - 1) >= 0) {
+        ctrl.position = ctrl.position - 1;
+      }
+    };
+  }],
+  bindings: {
+    skuImage: '<',
+    productImages: '<'
+  }
+});
+
+mdApp.component('mdProduct', {
+  template: `<md-full-screen-fade active="$ctrl.dialog" on-close="$ctrl.onExit()">
+              <md-actions side="left" lines="4">
+                <button md-button-icon-flat md-content="close" ng-click="$ctrl.closeProduct()"></button>
+              </md-actions>
+              <md-page vertical-scroll="scroll" ng-if="$ctrl.sku">
+                <md-form name="'productForm'">
+                  <md-product-image-slider sku-image="$ctrl.sku.image"
+                                           product-images="$ctrl.product.images"
+                                           ng-if="($ctrl.product.images.length || $ctrl.sku.image)"></md-product-image-slider>
+                  <md-product-info name="$ctrl.product.name"
+                                   description="$ctrl.product.description"
+                                   id="$ctrl.sku.id"
+                                   price="$ctrl.sku.price | formatCurrency:$ctrl.settings.currencies[$ctrl.sku.currency.toUpperCase()] | formatCurrencyPrefix:$ctrl.settings.currencies[$ctrl.sku.currency.toUpperCase()]"
+                                   inventory="$ctrl.sku.inventory | formatAvailability:$ctrl.settings.modals.product.inventory"></md-product-info>
+                  <md-sku-attributes attributes="$ctrl.sku.attributes" ng-if="$ctrl.sku.attributes"
+                                       on-select="$ctrl.openOptions(value)"></md-sku-attributes>
+                  <md-list>
+                    <md-sku-quantity name="'quantity'"
+                                     min="0"
+                                     max="$ctrl.sku.inventory | formatInventory"
+                                     step="1"
+                                     required="true"
+                                     value="$ctrl.skuQuantity"
+                                     on-change="$ctrl.updateQuantity(value)"></md-sku-quantity>
+                  </md-list>
+                </md-form>
+              </md-page>
+            </md-full-screen-fade>
+            <md-sku-attribute-options ng-if="$ctrl.attribute"
+                                      product="$ctrl.product"
+                                      attributes="$ctrl.sku.attributes"
+                                      attribute="$ctrl.attribute"
+                                      on-select="$ctrl.switchSku(attribute, option)"></md-sku-attribute-options>`,
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', 'mdIntercomFactory',  function($scope, $element, $attrs, $http, mdCartFactory, mdIntercomFactory) {
+    var ctrl = this;
+    
+    var getSku = function(product, skuId, skuAttributes) {
+      var result = {};
+      angular.forEach(product.skus.data, function(sku) {
+        if (angular.equals({}, result)) {
+          if (sku.active) {
+            if (!skuId && !skuAttributes) {
+              result = angular.merge({}, sku);
+            } else if (skuId) {
+              if (skuId === sku.id) {
+                result = angular.merge({}, sku);
+              }
+            } else if (skuAttributes) {
+              result = angular.merge({}, sku);
+              angular.forEach(skuAttributes, function(value, key) {
+                if (sku.attributes[key] !== value) {
+                  result = {};
+                }
+              });
+            }
           }
         }
       });
-    }
-  };
+      return angular.equals({}, result) ? false : result;
+    };
+    
+    ctrl.updateQuantity = function(quantity) {
+      var value = {
+        'type': 'sku',
+        'parent': ctrl.sku.id,
+        'quantity': quantity,
+        'amount': (ctrl.sku.price * quantity),
+        'price': ctrl.sku.price,
+        'currency': ctrl.sku.currency,
+        'description': ctrl.product.name,
+        'product': ctrl.product.id
+      };
+      mdCartFactory.updateCart('items', value);
+      ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
+    };
+    
+    ctrl.switchSku = function(attribute, option) {
+      if (option) {
+        var skuAttributes = angular.merge({}, ctrl.sku.attributes);
+        skuAttributes[attribute] = option;
+        var sku = getSku(ctrl.product, false, skuAttributes);
+        if (sku) {
+          ctrl.sku = sku;
+          ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
+        }
+      }
+      ctrl.attribute = false;
+    };
+    
+    ctrl.openOptions = function(attribute) {
+      ctrl.attribute = attribute;
+    };
+    
+    ctrl.closeProduct = function() {
+      ctrl.dialog = false;
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.dialog = true;
+      //ctrl.sku = false;
+      ctrl.attribute = false;
+      if (ctrl.productId) {
+        $http.get('product/' + ctrl.productId.toString(), {'cache': true}).then(function(response) {
+          ctrl.product = response.data;
+          if (ctrl.product && ctrl.product.active) {
+            var sku = getSku(ctrl.product, ctrl.skuId);
+            if (sku) {
+              ctrl.sku = sku;
+              ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
+            }
+          }
+        }, mdIntercomFactory.get('error'));
+      }
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      
+    };
+    
+  }],
+  bindings: {
+    settings: '<',
+    productId: '<',
+    skuId: '<',
+    onExit: '&'
+  }
+});
+
+mdApp.component('mdProducts', {
+  template: `<md-wall min-item-width="240">
+              <md-wall-item-multiline-clickable md-width="mdWall.itemWidth" ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({productId: value.id, skuId: false})">
+                <img md-base ng-if="product.images.length"
+                     ng-src="{{product.images[0]}}"
+                     width="100%">
+                <md-base md-pad="24,16">
+                  <md-base md-font="headline" md-content="{{product.name}}"></md-base>
+                  <md-base md-font="body1" md-misc="textTrim" md-content="{{product.description}}" ng-if="product.description"></md-base>
+                </md-base>
+              </md-wall-item-multiline-clickable>
+              <div md-clear></div>
+              <md-cards-item-multiline-clickable ng-if="$ctrl.products.has_more" on-click="$ctrl.loadMoreProducts()">
+                <md-base md-pad="4"
+                         md-icon="avatar"
+                         md-content="refresh"></md-base>
+              </md-cards-item-multiline-clickable>
+            </md-wall>`,
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdIntercomFactory',  function($scope, $element, $attrs, $http, mdIntercomFactory) {
+    var ctrl = this;
+    
+    var getProducts = function(products) {
+      var query = '';
+      if (products.has_more) {
+        query = '?start=' + products.data[products.data.length - 1]['id'];
+      }
+      $http.get('products' + query, {'cache': true}).then(function(response) {
+        products.data.push.apply(products.data, response.data.data);
+        products.has_more = response.data.has_more;
+      }, mdIntercomFactory.get('error'));
+    };
+    
+    ctrl.loadMoreProducts = function() {
+      if (ctrl.products.has_more) {
+        getProducts(ctrl.products);
+      }
+    };
+    
+    ctrl.$onInit = function() {
+      ctrl.products = {'data': [], 'has_more': false};
+      getProducts(ctrl.products);
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      
+    };
+  }],
+  bindings: {
+    settings: '<',
+    onSelect: '&'
+  }
+});
+
+mdApp.component('mdHome', {
+  template: `<md-full-screen>
+              <md-app-bar>
+                <md-app-logo img-width="'56px'"
+                             img-height="'56px'"
+                             img-src="$ctrl.settings.account.business_logo"
+                             img-alt="$ctrl.settings.account.business_name">
+                </md-app-logo>
+                <md-actions side="right" lines="4">
+                  <button md-button-icon-flat md-content="shopping_cart" ng-click="$ctrl.openCart()"></button>
+                </md-actions>
+              </md-app-bar>
+              <md-page vertical-scroll="scroll" top="56px">
+                <md-products settings="$ctrl.settings"
+                             on-select="$ctrl.openProduct(productId, skuId)"></md-products>
+              </md-page>
+            </md-full-screen>
+            <md-cart settings="$ctrl.settings"
+                     cart="$ctrl.cart"
+                     ng-if="$ctrl.cartDialog"
+                     on-open-product="$ctrl.openProduct(productId, skuId)"
+                     on-exit="$ctrl.closeCart()"></md-cart>
+            <md-product settings="$ctrl.settings"
+                        product-id="$ctrl.productId"
+                        sku-id="$ctrl.skuId"
+                        ng-if="$ctrl.productId"
+                        on-exit="$ctrl.closeProduct()"></md-product>
+            <md-brief message="$ctrl.message" ng-if="$ctrl.message" on-hide="$ctrl.eraseMessage()"></md-brief>`,
+  controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $http, mdCartFactory, mdIntercomFactory) {
+    var ctrl = this;
+    
+    ctrl.openProduct = function(productId, skuId) {
+      ctrl.productId = productId;
+      ctrl.skuId = skuId;
+    };
+    
+    ctrl.closeProduct = function() {
+      ctrl.productId = false;
+      ctrl.skuId = false;
+    };
+    
+    ctrl.openCart = function() {
+      ctrl.cartDialog = true;
+    };
+    
+    ctrl.closeCart = function() {
+      ctrl.cartDialog = false;
+    };
+    
+    ctrl.eraseMessage = function() {
+      ctrl.message = false;
+    };
+    
+    ctrl.$onInit = function() {
+      mdIntercomFactory.register('error', function(response) {
+        if (response.data && response.data.error && ctrl.settings.errors[response.data.error]) {
+          ctrl.message = ctrl.settings.errors[response.data.error];
+        } else if (response.status && ctrl.settings.errors[response.status.toString()]) {
+          ctrl.message = ctrl.settings.errors[response.status.toString()];
+        }
+      });
+      ctrl.message = false;
+      ctrl.productId = false;
+      ctrl.cartDialog = false;
+      $http.get('app/settings.json', {'cache': true}).then(function(response) {
+        ctrl.settings = response.data;
+        $http.get('app/currency.json', {'cache': true}).then(function(response) {
+          ctrl.settings.currencies = response.data;
+        }, mdIntercomFactory.get('error'));
+        $http.get('app/countries.json', {'cache': true}).then(function(response) {
+          ctrl.settings.countries = response.data.list;
+        }, mdIntercomFactory.get('error'));
+        $http.get('account', {'cache': true}).then(function(response) {
+          ctrl.settings.account = response.data;
+        }, mdIntercomFactory.get('error'));
+        mdCartFactory.createCart(function(response) {
+          mdIntercomFactory.get('error')(response);
+        });
+      }, mdIntercomFactory.get('error'));
+    };
+    
+    ctrl.$onChanges = function(changes) {
+      
+    };
+  }],
+  bindings: {
+  }
+});
+
+mdApp.controller('AppController', ['$scope', '$http', function($scope, $http) {
+  
+  $http.get('app/settings.json', {'cache': true}).then(function(response) {
+    $scope.settings = response.data;
+    $http.get('account', {'cache': true}).then(function(response) {
+      $scope.settings.account = response.data;
+      Stripe.setPublishableKey($scope.settings.account.public_key);
+    });
+  });
+  
 }]);
 
 })();
