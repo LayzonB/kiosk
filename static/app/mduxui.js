@@ -540,7 +540,7 @@ mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle
     link: function(scope, element, attrs) {
       attrs.$observe('mdContent', function(value) {
         if (scope.content !== value) {
-          element.css({'opacity': '0'});
+          $timeout(function() {element.css({'opacity': '0'});});
           $timeout(function() {scope.content = value; element.css({'opacity': '1'});}, 200);
         }
       });
@@ -548,7 +548,7 @@ mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle
   };
 }]);
 
-mdUXUI.directive('mdInputLabel', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var s = {
@@ -603,16 +603,25 @@ mdUXUI.directive('mdInputLabel', ['mdStyle', function(mdStyle) {
       };
       update();
       attrs.$observe('mdError', function(value) {
-        error = scope.$eval(value);
-        update();
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          error = val;
+          $timeout(function() {update();});
+        }
       });
       attrs.$observe('mdDisabled', function(value) {
-        disabled = scope.$eval(value);
-        update();
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          disabled = val;
+          $timeout(function() {update();});
+        }
       });
       attrs.$observe('focus', function(value) {
-        focus = scope.$eval(value);
-        update();
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          focus = val;
+          $timeout(function() {update();});
+        }
       });
     }
   };
@@ -860,7 +869,7 @@ mdUXUI.directive('mdConfirmationCase', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdModalScreen', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       element.css(mdStyle.modal('screen', {}));
@@ -878,14 +887,17 @@ mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
       };
       toggle();
       attrs.$observe('active', function(value) {
-        active = scope.$eval(value);
-        toggle();
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          active = val;
+          $timeout(function() {toggle();});
+        }
       });
     }
   };
 }]);
 
-mdUXUI.directive('mdModalSlide', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdModalSlide', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var side = attrs.mdModalSlide;
@@ -911,14 +923,17 @@ mdUXUI.directive('mdModalSlide', ['mdStyle', function(mdStyle) {
       };
       toggle();
       attrs.$observe('active', function(value) {
-        active = scope.$eval(value);
-        toggle();
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          active = val;
+          $timeout(function() {toggle();});
+        }
       });
     }
   };
 }]);
 
-mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdModalFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var active = false;
@@ -934,8 +949,11 @@ mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
       };
       toggle();
       attrs.$observe('active', function(value) {
-        active = scope.$eval(value);
-        toggle();
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          active = val;
+          $timeout(function() {toggle();});
+        }
       });
     }
   };
@@ -1037,13 +1055,12 @@ mdUXUI.directive('mdPage', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
       element.css(mdStyle.page(s));
       attrs.$observe('position', function(value) {
         element.css({'transform': 'translate(0%, ' + value.toString() + '%)'});
-        //$timeout(function() {}, 0);
       });
     }
   };
 }]);
 
-mdUXUI.directive('mdAppBar', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdAppBar', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var s = {
@@ -1253,14 +1270,14 @@ mdUXUI.directive('mdSecondary', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdFade', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       attrs.$observe('mdFade', function(value) {
         if (scope.$eval(value)) {
-          element.css({'opacity': '0'});
+          $timeout(function() {element.css({'opacity': '0'});});
         } else {
-          element.css({'opacity': '1'});
+          $timeout(function() {element.css({'opacity': '1'});});
         }
       });
     }
@@ -1384,7 +1401,7 @@ mdUXUI.directive('mdCarouselFrame', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle) {
+mdUXUI.directive('mdCarousel', ['$window', '$timeout', 'mdStyle', function($window, $timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       var s = {
@@ -1414,17 +1431,17 @@ mdUXUI.directive('mdCarousel', ['$window', 'mdStyle', function($window, mdStyle)
       angular.element($window).on('resize', function() {
         setCarouselSize();
         scope.$apply();
-        setPosition();
+        $timeout(function() {setPosition();});
       });
       angular.element($window).on('load', function() {
         setCarouselSize();
         scope.$apply();
-        setPosition();
+        $timeout(function() {setPosition();});
       });
       attrs.$observe('position', function(value) {
         if (value) {
           position = parseInt(value);
-          setPosition();
+          $timeout(function() {setPosition();});
         }
       });
     }
@@ -1632,13 +1649,22 @@ mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
     link: function(scope, element, attrs) {
       attrs.$observe('mdDisabled', function(value) {
         if (scope.$eval(value)) {
+          var s = {};
+          var color = element.css('color');
+          var cursor = element.css('cursor');
           if (!attrs.originalColor) {
-            attrs.$set('originalColor', element.css('color'));
+            attrs.$set('originalColor', color);
           }
           if (!attrs.originalCursor) {
-            attrs.$set('originalCursor', element.css('cursor'));
+            if ((cursor === 'pointer') || (cursor === 'text')) {
+              attrs.$set('originalCursor', cursor);
+            }
           }
-          element.css({'color': 'rgba(0, 0, 0, 0.38)', 'cursor': 'not-allowed'});
+          s['color'] = 'rgba(0, 0, 0, 0.38)';
+          if ((cursor === 'pointer') || (cursor === 'text')) {
+            s['cursor'] = 'not-allowed';
+          }
+          element.css(s);
         } else {
           if (attrs.originalColor) {
             element.css({'color': attrs.originalColor});

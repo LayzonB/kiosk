@@ -123,29 +123,30 @@
             "minlength": "",
             "maxlength": "",
             "pattern": "",
-            "mdCustomValidator": "Invalid card number!"
+            "validateCardNumber": "Invalid card number!",
+            "validateCardType": "Unknown card type!"
           }
         },
         "exp_month": {
-          "label": "Card expiration (Month)",
+          "label": "Card expiration month (MM)",
           "instructions": {
             "info": "Card expiration printed on the front of your card.",
             "required": "This field requires \"text\" value!",
             "minlength": "This field accepts minimum two digits!",
             "maxlength": "This field accepts maximum two digits!",
             "pattern": "",
-            "mdCustomValidator": "Invalid expiration month!"
+            "validateExpiry": "Invalid expiration month!"
           }
         },
         "exp_year": {
-          "label": "Card expiration (Year)",
+          "label": "Card expiration year (YYYY)",
           "instructions": {
             "info": "Card expiration printed on the front of your card.",
             "required": "This field requires \"text\" value!",
             "minlength": "This field accepts minimum two digits!",
             "maxlength": "This field accepts maximum four digits!",
             "pattern": "",
-            "mdCustomValidator": "Invalid expiration year!"
+            "validateExpiry": "Invalid expiration year!"
           }
         },
         "cvc": {
@@ -156,7 +157,7 @@
             "minlength": "This field accepts minimum three digits!",
             "maxlength": "This field accepts maximum three digits!",
             "pattern": "",
-            "mdCustomValidator": "Invalid cvc!"
+            "validateCVC": "Invalid cvc!"
           }
         },
         "action": "Pay"

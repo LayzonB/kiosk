@@ -226,7 +226,6 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
         };
         $http.post('order/pay', order, {'cache': true}).then(function(response) {
           angular.merge(cart, response.data);
-          cart.card = {};
           $cookies.remove('orderId');
           callback(response);
         }, callback);
@@ -367,11 +366,11 @@ var modalController = function($scope, $element, $attrs, $timeout) {
     }
   };
   ctrl.open = function() {
-    $timeout(function() {ctrl.alive = true;}, 0);
+    $timeout(function() {ctrl.alive = true;});
     $timeout(function() {ctrl.onOpen();}, 300);
   };
   ctrl.close = function() {
-    $timeout(function() {ctrl.alive = false;}, 0);
+    $timeout(function() {ctrl.alive = false;});
     $timeout(function() {ctrl.onClose();}, 300);
   };
   ctrl.$onChanges = function(changes) {
@@ -518,7 +517,7 @@ mdApp.component('mdBrief', {
         var readingTime = (ctrl.message.length * 200) + 2000;
         $timeout.cancel(hide_snackbar);
         ctrl.alive = false;
-        show_snackbar = $timeout(ctrl.show, 0);
+        show_snackbar = $timeout(ctrl.show);
         hide_snackbar = $timeout(ctrl.hide, readingTime);
       }
     };
@@ -689,17 +688,18 @@ mdApp.component('mdListItemClickable', {
   }
 });
 
-mdApp.directive('mdCustomValidator', [function() {
+mdApp.directive('mdCustomValidators', [function() {
   return {
     scope: {
-      mdCustomValidator: '&'
+      mdCustomValidators: '&'
     },
     require: 'ngModel',
     link: function(scope, element, attrs, ctrl) {
-      if (scope.mdCustomValidator()) {
-        ctrl.$validators.mdCustomValidator = scope.mdCustomValidator();
-      } else {
-        ctrl.$validators.mdCustomValidator = function(modelValue, viewValue) {return true};
+      var validators = scope.mdCustomValidators();
+      if (validators) {
+        angular.forEach(validators, function(callback, key) {
+          ctrl.$validators[key] = callback;
+        });
       }
     }
   };
@@ -728,7 +728,7 @@ mdApp.component('mdTextInput', {
                        ng-minlength="$ctrl.minlength"
                        ng-maxlength="$ctrl.maxlength"
                        ng-pattern="$ctrl.pattern"
-                       md-custom-validator="$ctrl.custom"
+                       md-custom-validators="$ctrl.custom"
                        ng-change="$ctrl.onChange({name: $ctrl.name, value: $ctrl.value})">
                 <md-input-helper md-content="{{$ctrl.instruction}}"
                                  md-disabled="{{$ctrl.disabled}}"
@@ -1509,7 +1509,7 @@ mdApp.component('mdCartPay', {
                   <md-text-input name="'number'"
                                  required="true"
                                  trim="true"
-                                 custom="$ctrl.validateCardNumber"
+                                 custom="$ctrl.number"
                                  options="{updateOn: 'blur'}"
                                  disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.pay.number.label"
@@ -1521,6 +1521,8 @@ mdApp.component('mdCartPay', {
                                  trim="true"
                                  minlength="2"
                                  maxlength="2"
+                                 custom="$ctrl.exp_month"
+                                 options="{updateOn: 'blur'}"
                                  disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.pay.exp_month.label"
                                  instructions="$ctrl.settings.modals.cart.pay.exp_month.instructions"
@@ -1529,8 +1531,10 @@ mdApp.component('mdCartPay', {
                   <md-text-input name="'exp_year'"
                                  required="true"
                                  trim="true"
-                                 minlength="2"
+                                 minlength="4"
                                  maxlength="4"
+                                 custom="$ctrl.exp_year"
+                                 options="{updateOn: 'blur'}"
                                  disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.pay.exp_year.label"
                                  instructions="$ctrl.settings.modals.cart.pay.exp_year.instructions"
@@ -1541,7 +1545,7 @@ mdApp.component('mdCartPay', {
                                  trim="true"
                                  minlength="3"
                                  maxlength="3"
-                                 custom="$ctrl.validateCVC"
+                                 custom="$ctrl.cvc"
                                  options="{updateOn: 'blur'}"
                                  disabled="$ctrl.disabled"
                                  label="$ctrl.settings.modals.cart.pay.cvc.label"
@@ -1557,20 +1561,39 @@ mdApp.component('mdCartPay', {
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
-    ctrl.validEmail = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
-    
-    ctrl.validPhone = /^\+?([0-9]{2})\)?[-. ]?([0-9]{4})[-. ]?([0-9]{4})$/;
-    
-    ctrl.validateCardNumber = function(modelValue, viewValue) {
-      return Stripe.card.validateCardNumber(modelValue);
+    ctrl.number = {
+      'validateCardNumber': function(modelValue, viewValue) {
+        return Stripe.card.validateCardNumber(modelValue);
+      },
+      'validateCardType': function(modelValue, viewValue) {
+        if (modelValue) {
+          var cardType = Stripe.card.cardType(modelValue);
+          if (cardType === 'Unknown') {
+            return false;
+          } else {
+            return true;
+          }
+        }
+      }
     };
     
-    ctrl.validateExpiry = function(modelValue, viewValue) {
-      return Stripe.card.validateExpiry(modelValue);
+    ctrl.exp_month = {
+      'validateExpiry': function(modelValue, viewValue) {
+        var year = new Date().getFullYear();
+        return Stripe.card.validateExpiry(modelValue, (year + 1).toString());
+      }
     };
     
-    ctrl.validateCVC = function(modelValue, viewValue) {
-      return Stripe.card.validateCVC(modelValue);
+    ctrl.exp_year = {
+      'validateExpiry': function(modelValue, viewValue) {
+        return Stripe.card.validateExpiry('12', modelValue);
+      }
+    };
+    
+    ctrl.cvc = {
+      'validateCVC': function(modelValue, viewValue) {
+        return Stripe.card.validateCVC(modelValue);
+      }
     };
     
     ctrl.register = function(validator) {
@@ -1678,12 +1701,12 @@ mdApp.component('mdCart', {
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
                                on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
-  controller: ['$scope', '$element', '$attrs', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, mdCartFactory, mdIntercomFactory) {
+  controller: ['$scope', '$element', '$attrs', '$timeout', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $timeout, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
     ctrl.closeCart = function() {
       ctrl.dialog = false;
-      ctrl.order = {};
+      $timeout(function() {ctrl.order = {};}, 300);
     };
     
     ctrl.deleteCart = function(value) {
@@ -1716,18 +1739,19 @@ mdApp.component('mdCart', {
     };
     
     ctrl.stepTwo = function() {
-      ctrl.step = 2;
+      $timeout(function() {ctrl.step = 2;});
     };
     
     ctrl.stepThree = function() {
       ctrl.disabled = true;
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
-          ctrl.step = 3;
-          ctrl.cart = mdCartFactory.getCart();
+          $timeout(function() {ctrl.step = 3;});
+          $timeout(function() {ctrl.cart = mdCartFactory.getCart();}, 300);
+        } else {
+          mdIntercomFactory.get('error')(response);
         }
-        ctrl.disabled = false;
-        mdIntercomFactory.get('error')(response);
+        $timeout(function() {ctrl.disabled = false;}, 300);
       });
     };
     
@@ -1735,11 +1759,12 @@ mdApp.component('mdCart', {
       ctrl.disabled = true;
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
-          ctrl.step = 4;
-          ctrl.cart = mdCartFactory.getCart();
+          $timeout(function() {ctrl.step = 4;});
+          $timeout(function() {ctrl.cart = mdCartFactory.getCart();}, 300);
+        } else {
+          mdIntercomFactory.get('error')(response);
         }
-        ctrl.disabled = false;
-        mdIntercomFactory.get('error')(response);
+        $timeout(function() {ctrl.disabled = false;}, 300);
       });
     };
     
@@ -1748,14 +1773,17 @@ mdApp.component('mdCart', {
       mdCartFactory.payCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           ctrl.order = angular.merge({}, mdCartFactory.getCart());
-          mdCartFactory.createCart(function(response) {
-            mdIntercomFactory.get('error')(response);
-          });
-          ctrl.step = 5;
-          ctrl.cart = mdCartFactory.getCart();
+          $timeout(function() {ctrl.step = 5;});
+          $timeout(function() {
+            mdCartFactory.createCart(function(response) {
+              mdIntercomFactory.get('error')(response);
+            });
+            ctrl.cart = mdCartFactory.getCart();
+          }, 300);
+        } else {
+          mdIntercomFactory.get('error')(response);
         }
-        ctrl.disabled = false;
-        mdIntercomFactory.get('error')(response);
+        $timeout(function() {ctrl.disabled = false;}, 300);
       });
     };
     
