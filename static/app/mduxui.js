@@ -498,6 +498,56 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     });
   };
   
+  var mdModalEffects = function(name) {
+    return function(scope, element, attrs) {
+      var side = attrs.mdModalSlide;
+      var active = false;
+      var toggle = function() {
+        var s = {};
+        if (active) {
+          if (name === 'mdModalFade') {
+            s['transition'] = 'all 0.3s linear 0s';
+            s['opacity'] = '1';
+          } else if (name === 'mdModalFadeScreen') {
+            s['transition'] = 'all 0.2s linear 0s';
+            s['opacity'] = '1';
+          } else {
+            s['transition'] = 'all 0.3s cubic-bezier(0, 0, 0.4, 1) 0s';
+            s['transform'] = 'translate(0%, 0%)';
+          }
+        } else {
+          if (name === 'mdModalFade') {
+            s['transition'] = 'all 0.3s linear 0s';
+            s['opacity'] = '0';
+          } else if (name === 'mdModalFadeScreen') {
+            s['transition'] = 'all 0.2s linear 0.1s';
+            s['opacity'] = '0';
+          } else {
+            s['transition'] = 'all 0.3s cubic-bezier(0.8, 0, 1, 1) 0s';
+            if (name === 'mdModalSlideRight') {
+              s['transform'] = 'translate(110%, 0%)';
+            } else if (name === 'mdModalSlideLeft') {
+              s['transform'] = 'translate(-110%, 0%)';
+            } else if (name === 'mdModalSlideTop') {
+              s['transform'] = 'translate(0%, -110%)';
+            } else if (name === 'mdModalSlideBottom') {
+              s['transform'] = 'translate(0%, 110%)';
+            }
+          }
+        }
+        element.css(s);
+      };
+      toggle();
+      attrs.$observe(name, function(value) {
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          active = val;
+          $timeout(function() {toggle();});
+        }
+      });
+    };
+  };
+  
   var calculateContainer = function (containerWidth, minItemWidth) {
     var itemCount = 2;
     while (true) {
@@ -527,6 +577,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     'page': page,
     'collections': collections,
     'ripple': ripple,
+    'mdModalEffects': mdModalEffects,
     'calculateContainer': calculateContainer,
   };
 }]);
@@ -540,7 +591,7 @@ mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle
     link: function(scope, element, attrs) {
       attrs.$observe('mdContent', function(value) {
         if (scope.content !== value) {
-          $timeout(function() {element.css({'opacity': '0'});});
+          element.css({'opacity': '0'});
           $timeout(function() {scope.content = value; element.css({'opacity': '1'});}, 200);
         }
       });
@@ -573,13 +624,6 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
             s['color'] = 'rgba(0, 0, 0, 0.54)';
           }
           attrs.$set('originalColor', 'rgba(0, 0, 0, 0.54)');
-          //s['line-height'] = '14px';
-          //s['font-size'] = '12px';
-          //s['letter-spacing'] = '0.2px';
-          //s['color'] = 'rgba(0, 0, 0, 0.54)';
-          //s['padding-top'] = '8px';
-          //s['transform'] = 'translate(0px, 6px) scale(0.75)';
-          //s['color'] = 'rgba(0, 0, 0, 0.54)';
           s['transform'] = 'translate(0px, 6px) scale(0.75)';
         } else {
           if (error) {
@@ -590,13 +634,6 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
             s['color'] = 'rgba(0, 0, 0, 0.38)';
           }
           attrs.$set('originalColor', 'rgba(0, 0, 0, 0.38)');
-          //s['line-height'] = '20px';
-          //s['font-size'] = '16px';
-          //s['letter-spacing'] = '0.1px';
-          //s['color'] = 'rgba(0, 0, 0, 0.38)';
-          //s['padding-top'] = '2px';
-          //s['transform'] = 'translate(0px, 28px) scale(1)';
-          //s['color'] = 'rgba(0, 0, 0, 0.38)';
           s['transform'] = 'translate(0px, 28px) scale(1)';
         }
         element.css(s);
@@ -650,16 +687,6 @@ mdUXUI.directive('mdInputText', ['mdStyle', function(mdStyle) {
         'min-height': '36px',
       };
       element.css(mdStyle.font('input', mdStyle.general(s)));
-      attrs.$observe('mdDisabled', function(value) {
-        var s = {};
-        if (scope.$eval(value)) {
-          s['color'] = 'rgba(0, 0, 0, 0.38)';
-        } else {
-          s['color'] = 'rgba(0, 0, 0, 0.87)';
-        }
-        attrs.$set('originalColor', 'rgba(0, 0, 0, 0.87)');
-        element.css(s);
-      });
     }
   };
 }]);
@@ -869,93 +896,47 @@ mdUXUI.directive('mdConfirmationCase', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdModalScreen', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
+mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       element.css(mdStyle.modal('screen', {}));
-      var active = false;
-      var toggle = function() {
-        var s = {};
-        if (active) {
-          s['transition'] = 'all 0.2s linear 0s';
-          s['opacity'] = '1';
-        } else {
-          s['transition'] = 'all 0.2s linear 0.1s';
-          s['opacity'] = '0';
-        }
-        element.css(s);
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          active = val;
-          $timeout(function() {toggle();});
-        }
-      });
     }
   };
 }]);
 
-mdUXUI.directive('mdModalSlide', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
+mdUXUI.directive('mdModalSlideRight', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      var side = attrs.mdModalSlide;
-      var active = false;
-      var toggle = function() {
-        var s = {};
-        if (active) {
-          s['transition'] = 'all 0.3s cubic-bezier(0, 0, 0.4, 1) 0s';
-          s['transform'] = 'translate(0%, 0%)';
-        } else {
-          s['transition'] = 'all 0.3s cubic-bezier(0.8, 0, 1, 1) 0s';
-          if (side === 'right') {
-            s['transform'] = 'translate(110%, 0%)';
-          } else if (side === 'left') {
-            s['transform'] = 'translate(-110%, 0%)';
-          } else if (side === 'top') {
-            s['transform'] = 'translate(0%, -110%)';
-          } else if (side === 'bottom') {
-            s['transform'] = 'translate(0%, 110%)';
-          }
-        }
-        element.css(s);
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          active = val;
-          $timeout(function() {toggle();});
-        }
-      });
-    }
+    link: mdStyle.mdModalEffects('mdModalSlideRight')
   };
 }]);
 
-mdUXUI.directive('mdModalFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
+mdUXUI.directive('mdModalSlideLeft', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      var active = false;
-      var toggle = function() {
-        var s = {};
-        s['transition'] = 'all 0.3s linear 0s';
-        if (active) {
-          s['opacity'] = '1';
-        } else {
-          s['opacity'] = '0';
-        }
-        element.css(s);
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          active = val;
-          $timeout(function() {toggle();});
-        }
-      });
-    }
+    link: mdStyle.mdModalEffects('mdModalSlideLeft')
+  };
+}]);
+
+mdUXUI.directive('mdModalSlideTop', ['mdStyle', function(mdStyle) {
+  return {
+    link: mdStyle.mdModalEffects('mdModalSlideTop')
+  };
+}]);
+
+mdUXUI.directive('mdModalSlideBottom', ['mdStyle', function(mdStyle) {
+  return {
+    link: mdStyle.mdModalEffects('mdModalSlideBottom')
+  };
+}]);
+
+mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
+  return {
+    link: mdStyle.mdModalEffects('mdModalFade')
+  };
+}]);
+
+mdUXUI.directive('mdModalFadeScreen', ['mdStyle', function(mdStyle) {
+  return {
+    link: mdStyle.mdModalEffects('mdModalFadeScreen')
   };
 }]);
 
@@ -1274,10 +1255,13 @@ mdUXUI.directive('mdFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       attrs.$observe('mdFade', function(value) {
-        if (scope.$eval(value)) {
-          $timeout(function() {element.css({'opacity': '0'});});
-        } else {
-          $timeout(function() {element.css({'opacity': '1'});});
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            $timeout(function() {element.css({'opacity': '0'});});
+          } else {
+            $timeout(function() {element.css({'opacity': '1'});});
+          }
         }
       });
     }
@@ -1364,19 +1348,6 @@ mdUXUI.directive('mdWallCell', ['mdStyle', function(mdStyle) {
         'float': 'left',
       };
       element.css(mdStyle.general(s));
-      var width;
-      var setSize = function() {
-        var s = {
-          'width': width.toString() + 'px',
-        };
-        element.css(s);
-      };
-      attrs.$observe('mdWidth', function(value) {
-        if (value) {
-          width = value;
-          setSize();
-        }
-      });
     }
   };
 }]);
@@ -1598,61 +1569,53 @@ mdUXUI.directive('mdBase', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
-  return {
-    link: function(scope, element, attrs) {
-      attrs.$observe('mdSeam', function(value) {
-        element.css(mdStyle.misc('seam'));
-      });
-    }
-  };
-}]);
-
 mdUXUI.directive('mdFont', ['mdStyle', function(mdStyle) {
   return {
+    priority: 70,
     link: function(scope, element, attrs) {
-      attrs.$observe('mdFont', function(value) {
-        element.css(mdStyle.font(value));
-      });
-      attrs.$observe('mdMisc', function(value) {
-        element.css(mdStyle.misc(value));
-      });
+      element.css(mdStyle.font(attrs.mdFont));
     }
   };
 }]);
 
 mdUXUI.directive('mdIcon', ['mdStyle', function(mdStyle) {
   return {
+    priority: 70,
     link: function(scope, element, attrs) {
-      attrs.$observe('mdIcon', function(value) {
-        var s = {};
-        if (value === 'thumb') {
-          s = {'font-size': '96px'};
-        } else if (value === 'avatar') {
-          s = {'font-size': '48px'};
-        }
-        element.css(mdStyle.font('default', mdStyle.icon(s)));
-      });
+      var s = {};
+      if (attrs.mdIcon === 'thumb') {
+        s = {'font-size': '96px'};
+      } else if (attrs.mdIcon === 'avatar') {
+        s = {'font-size': '48px'};
+      }
+      element.css(mdStyle.font('default', mdStyle.icon(s)));
+    }
+  };
+}]);
+
+mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
+  return {
+    priority: 80,
+    link: function(scope, element, attrs) {
+      element.css(mdStyle.misc('seam'));
     }
   };
 }]);
 
 mdUXUI.directive('mdMisc', ['mdStyle', function(mdStyle) {
   return {
+    priority: 90,
     link: function(scope, element, attrs) {
-      attrs.$observe('mdMisc', function(value) {
-        element.css(mdStyle.misc(value));
-      });
+      element.css(mdStyle.misc(attrs.mdMisc));
     }
   };
 }]);
 
 mdUXUI.directive('mdPad', ['mdStyle', function(mdStyle) {
   return {
+    priority: 100,
     link: function(scope, element, attrs) {
-      attrs.$observe('mdPad', function(value) {
-        element.css(mdStyle.pad(value));
-      });
+      element.css(mdStyle.pad(attrs.mdPad));
     }
   };
 }]);
@@ -1752,14 +1715,22 @@ mdUXUI.directive('mdActive', ['mdStyle', function(mdStyle) {
     priority: 100,
     link: function(scope, element, attrs) {
       attrs.$observe('mdActive', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.originalBackground) {
-            attrs.$set('originalBackground', element.css('background'));
-          }
-          element.css({'background': 'rgba(0, 0, 0, 0.08)'});
-        } else {
-          if (attrs.originalBackground) {
-            element.css({'background': attrs.originalBackground});
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            var s = {};
+            var background = element.css('background');
+            if (background) {
+              if (!attrs.originalBackground) {
+                attrs.$set('originalBackground', background);
+              }
+              s['background'] = 'rgba(0, 0, 0, 0.08)';
+            }
+            element.css(s);
+          } else {
+            if (attrs.originalBackground) {
+              element.css({'background': attrs.originalBackground});
+            }
           }
         }
       });
@@ -1772,29 +1743,32 @@ mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
     priority: 100,
     link: function(scope, element, attrs) {
       attrs.$observe('mdDisabled', function(value) {
-        if (scope.$eval(value)) {
-          var s = {};
-          var color = element.css('color');
-          var cursor = element.css('cursor');
-          if (!attrs.originalColor) {
-            attrs.$set('originalColor', color);
-          }
-          if (!attrs.originalCursor) {
-            if ((cursor === 'pointer') || (cursor === 'text')) {
-              attrs.$set('originalCursor', cursor);
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            var s = {};
+            var color = element.css('color');
+            var cursor = element.css('cursor');
+            if (color) {
+              if (!attrs.originalColor) {
+                attrs.$set('originalColor', color);
+              }
+              s['color'] = 'rgba(0, 0, 0, 0.38)';
             }
-          }
-          s['color'] = 'rgba(0, 0, 0, 0.38)';
-          if ((cursor === 'pointer') || (cursor === 'text')) {
-            s['cursor'] = 'not-allowed';
-          }
-          element.css(s);
-        } else {
-          if (attrs.originalColor) {
-            element.css({'color': attrs.originalColor});
-          }
-          if (attrs.originalCursor) {
-            element.css({'cursor': attrs.originalCursor});
+            if ((cursor === 'pointer') || (cursor === 'text')) {
+              if (!attrs.originalCursor) {
+                attrs.$set('originalCursor', cursor);
+              }
+              s['cursor'] = 'not-allowed';
+            }
+            element.css(s);
+          } else {
+            if (attrs.originalColor) {
+              element.css({'color': attrs.originalColor});
+            }
+            if (attrs.originalCursor) {
+              element.css({'cursor': attrs.originalCursor});
+            }
           }
         }
       });
@@ -1804,25 +1778,35 @@ mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
   return {
-    priority: 100,
+    priority: 110,
     link: function(scope, element, attrs) {
       attrs.$observe('mdError', function(value) {
-        if (scope.$eval(value)) {
-          if (!attrs.originalColor) {
-            attrs.$set('originalColor', element.css('color'));
-          }
-          var originalBorderBottomColor = element.css('border-bottom-color');
-          if (originalBorderBottomColor) {
-            attrs.$set('originalBorderBottomColor', originalBorderBottomColor);
-            element.css({'border-bottom-color': 'rgba(255, 0, 0, 0.87)'});
-          }
-          element.css({'color': 'rgba(255, 0, 0, 0.87)'});
-        } else {
-          if (attrs.originalColor) {
-            element.css({'color': attrs.originalColor});
-          }
-          if (attrs.originalBorderBottomColor) {
-            element.css({'border-bottom-color': attrs.originalBorderBottomColor});
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            var s = {};
+            var color = element.css('color');
+            var borderBottomColor = element.css('border-bottom-color');
+            if (color) {
+              if (!attrs.originalColor) {
+                attrs.$set('originalColor', color);
+              }
+              s['color'] = 'rgba(255, 0, 0, 0.87)';
+            }
+            if (borderBottomColor) {
+              if (!attrs.originalBorderBottomColor) {
+                attrs.$set('originalBorderBottomColor', borderBottomColor);
+              }
+              s['border-bottom-color'] = 'rgba(255, 0, 0, 0.87)';
+            }
+            element.css(s);
+          } else {
+            if (attrs.originalColor) {
+              element.css({'color': attrs.originalColor});
+            }
+            if (attrs.originalBorderBottomColor) {
+              element.css({'border-bottom-color': attrs.originalBorderBottomColor});
+            }
           }
         }
       });

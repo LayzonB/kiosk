@@ -11,7 +11,15 @@ mdApp.config([function() {
   
 }]);
 
-mdApp.run([function(){
+mdApp.run(['$rootScope', '$http', function($rootScope, $http) {
+  
+  $http.get('app/settings.json', {'cache': true}).then(function(response) {
+    $rootScope.settings = response.data;
+    $http.get('account', {'cache': true}).then(function(response) {
+      $rootScope.settings.account = response.data;
+      Stripe.setPublishableKey($rootScope.settings.account.public_key);
+    });
+  });
   
 }]);
 
@@ -356,6 +364,7 @@ mdApp.filter('formatAvailability', [function() {
 }]);
 
 /*--------------------------------------------------Components--------------------------------------------------*/
+
 /*--------------------------------------------------Modals--------------------------------------------------*/
 
 var modalController = function($scope, $element, $attrs, $timeout) {
@@ -384,23 +393,22 @@ var modalController = function($scope, $element, $attrs, $timeout) {
 
 mdApp.component('mdFullScreen', {
   template: `<md-full-screen-case>
-              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
-              <md-full-screen-sheet md-modal-slide="{{$ctrl.side}}" active="{{$ctrl.alive}}" ng-transclude></md-full-screen-sheet>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}"></md-modal-screen>
+              <md-full-screen-sheet md-modal-slide-right="{{$ctrl.alive}}" ng-transclude></md-full-screen-sheet>
             </md-full-screen-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
   bindings: {
     onOpen: '&',
     onClose: '&',
-    active: '<',
-    side: '<'
+    active: '<'
   }
 });
 
 mdApp.component('mdDrawerWide', {
   template: `<md-drawer-wide-case>
-              <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
-              <md-drawer-wide-sheet md-modal-slide="right" active="{{$ctrl.alive}}" ng-transclude></md-drawer-wide-sheet>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
+              <md-drawer-wide-sheet md-modal-slide-right="{{$ctrl.alive}}" ng-transclude></md-drawer-wide-sheet>
             </md-drawer-wide-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
@@ -413,8 +421,8 @@ mdApp.component('mdDrawerWide', {
 
 mdApp.component('mdDrawerNarrow', {
   template: `<md-drawer-narrow-case>
-              <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
-              <md-drawer-narrow-sheet md-modal-slide="right" active="{{$ctrl.alive}}" ng-transclude></md-drawer-narrow-sheet>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
+              <md-drawer-narrow-sheet md-modal-slide-right="{{$ctrl.alive}}" ng-transclude></md-drawer-narrow-sheet>
             </md-drawer-narrow-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
@@ -427,8 +435,8 @@ mdApp.component('mdDrawerNarrow', {
 
 mdApp.component('mdFullScreenFade', {
   template: `<md-full-screen-case>
-              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
-              <md-full-screen-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-full-screen-sheet>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}"></md-modal-screen>
+              <md-full-screen-sheet md-modal-fade="{{$ctrl.alive}}" ng-transclude></md-full-screen-sheet>
             </md-full-screen-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
@@ -441,8 +449,8 @@ mdApp.component('mdFullScreenFade', {
 
 mdApp.component('mdSimple', {
   template: `<md-simple-case>
-              <md-modal-screen active="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
-              <md-simple-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-simple-sheet>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}" ng-click="$ctrl.close()"></md-modal-screen>
+              <md-simple-sheet md-modal-fade="{{$ctrl.alive}}" ng-transclude></md-simple-sheet>
             </md-simple-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
@@ -455,8 +463,8 @@ mdApp.component('mdSimple', {
 
 mdApp.component('mdConfirmation', {
   template: `<md-confirmation-case>
-              <md-modal-screen active="{{$ctrl.alive}}"></md-modal-screen>
-              <md-confirmation-sheet md-modal-fade active="{{$ctrl.alive}}" ng-transclude></md-confirmation-sheet>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}"></md-modal-screen>
+              <md-confirmation-sheet md-modal-fade="{{$ctrl.alive}}" ng-transclude></md-confirmation-sheet>
             </md-confirmation-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
@@ -497,7 +505,7 @@ mdApp.component('mdAppIcon', {
 });
 
 mdApp.component('mdBrief', {
-  template: `<md-snack-bar md-modal-slide="bottom" active="{{$ctrl.alive}}">
+  template: `<md-snack-bar md-modal-slide-bottom="{{$ctrl.alive}}">
               <md-base md-font="brief" md-content="{{$ctrl.brief}}"></md-base>
             </md-snack-bar>`,
   controller: ['$scope', '$element', '$attrs', '$timeout', function($scope, $element, $attrs, $timeout) {
@@ -590,7 +598,7 @@ mdApp.component('mdCardsItemMultilineClickable', {
 });
 
 mdApp.component('mdWallItemMultiline', {
-  template: `<md-wall-cell md-width="{{$ctrl.mdWidth}}">
+  template: `<md-wall-cell md-set-width="{{$ctrl.mdWidth}}">
               <md-wall-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
               </md-wall-cell-tile>
             </md-wall-cell>`,
@@ -1640,7 +1648,7 @@ mdApp.component('mdCartEnd', {
 });
 
 mdApp.component('mdCart', {
-  template: `<md-full-screen side="'right'" active="$ctrl.dialog" on-close="$ctrl.onExit()">
+  template: `<md-full-screen active="$ctrl.dialog" on-close="$ctrl.onExit()">
               <md-app-bar>
                 <md-app-icon icon="'shopping_cart'"></md-app-icon>
                 <md-actions side="left" lines="4">
@@ -2270,7 +2278,7 @@ mdApp.component('mdProducts', {
 });
 
 mdApp.component('mdHome', {
-  template: `<md-full-screen>
+  template: `<md-full-screen-fade>
               <md-app-bar>
                 <md-app-logo img-width="'56px'"
                              img-height="'56px'"
@@ -2285,7 +2293,7 @@ mdApp.component('mdHome', {
                 <md-products settings="$ctrl.settings"
                              on-select="$ctrl.openProduct(productId, skuId)"></md-products>
               </md-page>
-            </md-full-screen>
+            </md-full-screen-fade>
             <md-cart settings="$ctrl.settings"
                      cart="$ctrl.cart"
                      ng-if="$ctrl.cartDialog"
@@ -2357,17 +2365,5 @@ mdApp.component('mdHome', {
   bindings: {
   }
 });
-
-mdApp.controller('AppController', ['$scope', '$http', function($scope, $http) {
-  
-  $http.get('app/settings.json', {'cache': true}).then(function(response) {
-    $scope.settings = response.data;
-    $http.get('account', {'cache': true}).then(function(response) {
-      $scope.settings.account = response.data;
-      Stripe.setPublishableKey($scope.settings.account.public_key);
-    });
-  });
-  
-}]);
 
 })();
