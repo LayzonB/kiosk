@@ -1092,7 +1092,7 @@ mdApp.component('mdCartDelete', {
 
 mdApp.component('mdCartCountries', {
   template: `<md-simple on-close="$ctrl.onSelect({value: $ctrl.option})" active="!$ctrl.option">
-              <md-page vertical-scroll="scroll">
+              <md-page vertical-scroll="scroll" md-infinite-scroll="{{$ctrl.countries.has_more}}" md-trigger="$ctrl.loadMoreCountries()">
                 <md-list>
                   <md-list-item-clickable ng-repeat="option in $ctrl.countries.data"
                                           first="option.name"
@@ -1102,22 +1102,6 @@ mdApp.component('mdCartCountries', {
                                           dialog="true"
                                           on-click="$ctrl.selectOption(value)">
                   </md-list-item-clickable>
-                  <button md-button-composite
-                          ng-if="$ctrl.countries.has_more"
-                          ng-click="$ctrl.loadMoreCountries()"
-                          ng-disabled="$ctrl.disabled"
-                          md-disabled="{{$ctrl.disabled}}"
-                          theme="tracking-dark">
-                    <md-list-cell>
-                      <md-list-cell-tile>
-                          <md-action side="center">
-                            <md-base md-pad="4"
-                                     md-icon="avatar"
-                                     md-content="refresh"></md-base>
-                          </md-action>
-                      </md-list-cell-tile>
-                    </md-list-cell>
-                  </button>
                 </md-list>
               </md-page>
             </md-simple>`,
