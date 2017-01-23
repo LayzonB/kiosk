@@ -906,36 +906,42 @@ mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdModalSlideRight', ['mdStyle', function(mdStyle) {
   return {
+    priority: 50,
     link: mdStyle.mdModalEffects('mdModalSlideRight')
   };
 }]);
 
 mdUXUI.directive('mdModalSlideLeft', ['mdStyle', function(mdStyle) {
   return {
+    priority: 50,
     link: mdStyle.mdModalEffects('mdModalSlideLeft')
   };
 }]);
 
 mdUXUI.directive('mdModalSlideTop', ['mdStyle', function(mdStyle) {
   return {
+    priority: 50,
     link: mdStyle.mdModalEffects('mdModalSlideTop')
   };
 }]);
 
 mdUXUI.directive('mdModalSlideBottom', ['mdStyle', function(mdStyle) {
   return {
+    priority: 50,
     link: mdStyle.mdModalEffects('mdModalSlideBottom')
   };
 }]);
 
 mdUXUI.directive('mdModalFade', ['mdStyle', function(mdStyle) {
   return {
+    priority: 50,
     link: mdStyle.mdModalEffects('mdModalFade')
   };
 }]);
 
 mdUXUI.directive('mdModalFadeScreen', ['mdStyle', function(mdStyle) {
   return {
+    priority: 50,
     link: mdStyle.mdModalEffects('mdModalFadeScreen')
   };
 }]);
@@ -1571,7 +1577,7 @@ mdUXUI.directive('mdBase', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdFont', ['mdStyle', function(mdStyle) {
   return {
-    priority: 70,
+    priority: 50,
     link: function(scope, element, attrs) {
       element.css(mdStyle.font(attrs.mdFont));
     }
@@ -1580,7 +1586,7 @@ mdUXUI.directive('mdFont', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdIcon', ['mdStyle', function(mdStyle) {
   return {
-    priority: 70,
+    priority: 50,
     link: function(scope, element, attrs) {
       var s = {};
       if (attrs.mdIcon === 'thumb') {
@@ -1595,7 +1601,7 @@ mdUXUI.directive('mdIcon', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
   return {
-    priority: 80,
+    priority: 100,
     link: function(scope, element, attrs) {
       element.css(mdStyle.misc('seam'));
     }
@@ -1604,7 +1610,7 @@ mdUXUI.directive('mdSeam', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdMisc', ['mdStyle', function(mdStyle) {
   return {
-    priority: 90,
+    priority: 100,
     link: function(scope, element, attrs) {
       element.css(mdStyle.misc(attrs.mdMisc));
     }
@@ -1740,7 +1746,7 @@ mdUXUI.directive('mdActive', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
   return {
-    priority: 100,
+    priority: 150,
     link: function(scope, element, attrs) {
       attrs.$observe('mdDisabled', function(value) {
         var val = scope.$eval(value);
@@ -1778,7 +1784,7 @@ mdUXUI.directive('mdDisabled', ['mdStyle', function(mdStyle) {
 
 mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
   return {
-    priority: 110,
+    priority: 160,
     link: function(scope, element, attrs) {
       attrs.$observe('mdError', function(value) {
         var val = scope.$eval(value);
