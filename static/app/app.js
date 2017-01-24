@@ -540,6 +540,20 @@ mdApp.component('mdBrief', {
   }
 });
 
+mdApp.component('mdLoader', {
+  template: `<md-full-screen-case>
+              <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}"></md-modal-screen>
+              <md-spinner active="{{$ctrl.alive}}"></md-spinner>
+            </md-full-screen-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
 /*--------------------------------------------------Inputs--------------------------------------------------*/
 
 mdApp.component('mdListItemMultiline', {
@@ -1692,7 +1706,8 @@ mdApp.component('mdCart', {
             <md-cart-countries settings="$ctrl.settings"
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
-                               on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
+                               on-select="$ctrl.selectCountry(value)"></md-cart-countries>
+            <md-loader active="$ctrl.disabled" ng-if="$ctrl.loader" on-close="$ctrl.closeLoader()"></md-loader>`,
   controller: ['$scope', '$element', '$attrs', '$timeout', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $timeout, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
@@ -1701,10 +1716,15 @@ mdApp.component('mdCart', {
       $timeout(function() {ctrl.order = {};}, 300);
     };
     
+    ctrl.closeLoader = function() {
+      ctrl.loader = false;
+    };
+    
     ctrl.deleteCart = function(value) {
       ctrl.deleteDialog = false;
       if (value) {
         ctrl.disabled = true;
+        ctrl.loader = true;
         mdCartFactory.deleteCart(function(response) {
           ctrl.disabled = false;
           ctrl.cart = mdCartFactory.getCart();
@@ -1736,6 +1756,7 @@ mdApp.component('mdCart', {
     
     ctrl.stepThree = function() {
       ctrl.disabled = true;
+      ctrl.loader = true;
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           $timeout(function() {ctrl.step = 3;});
@@ -1749,6 +1770,7 @@ mdApp.component('mdCart', {
     
     ctrl.stepFour = function() {
       ctrl.disabled = true;
+      ctrl.loader = true;
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           $timeout(function() {ctrl.step = 4;});
@@ -1762,6 +1784,7 @@ mdApp.component('mdCart', {
     
     ctrl.stepFive = function() {
       ctrl.disabled = true;
+      ctrl.loader = true;
       mdCartFactory.payCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           ctrl.order = angular.merge({}, mdCartFactory.getCart());
@@ -1798,6 +1821,7 @@ mdApp.component('mdCart', {
       }
       ctrl.order = {};
       ctrl.disabled = false;
+      ctrl.loader = false;
       ctrl.dialog = true;
       ctrl.deleteDialog = false;
       ctrl.countriesDialog = false;

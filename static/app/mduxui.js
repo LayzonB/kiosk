@@ -1847,4 +1847,91 @@ mdUXUI.directive('mdInfiniteScroll', ['$window', 'mdStyle', function($window, md
   };
 }]);
 
+mdUXUI.directive('mdSpinner', ['$interval', '$timeout', 'mdStyle', function($interval, $timeout, mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      var animation;
+      var angle = 360;
+      var active = false;
+      var s = {
+        'padding': '8px',
+        'border-radius': '50%',
+        'background': 'rgba(255, 255, 255, 1)',
+        'box-shadow': '0 1.5px 3px 0.75px rgba(0, 0, 0, 0.26)',
+        'z-index': '200',
+      };
+      element.css(mdStyle.general(s));
+      var spinner = angular.element('<div></div>');
+      spinner.css(mdStyle.general({
+        'width': '32px',
+        'height': '32px',
+        'border-radius': '50%',
+        'background': 'rgba(255, 255, 255, 1)',
+        'transition': 'all 1.2s linear 0s',
+      }));
+      var arc = angular.element('<div></div>');
+      arc.css(mdStyle.general({
+        'position': 'absolute',
+        'width': '50%',
+        'height': '100%',
+        'background': 'linear-gradient(rgba(0, 0, 0, 0.54), rgba(0, 0, 0, 0))',
+        'border-radius': '100% 0 0 100% / 50% 0 0 50%',
+        'transform-origin': '100% 50%',
+        'z-index': '100',
+      }));
+      var pin = angular.element('<div></div>');
+      pin.css(mdStyle.general({
+        'position': 'absolute',
+        'border-radius': '50%',
+        'width': '24px',
+        'height': '24px',
+        'background': 'rgba(255, 255, 255, 1)',
+        'opacity': '1',
+        'top': '4px',
+        'left': '4px',
+        'z-index': '200',
+      }));
+      spinner.append(arc);
+      spinner.append(pin);
+      element.append(spinner);
+      var toggle = function() {
+        var s = {};
+        if (active) {
+          animation = $interval(function() {
+            spinner.css({'transform': 'rotate(' + angle + 'deg)'});
+            angle = angle + 360;
+          }, 1200);
+          s['transition'] = 'all 0.15s cubic-bezier(0, 0, 0.4, 1) 0s';
+          s['transform'] = 'scale(1, 1)';
+          element.css(s);
+        } else {
+          s['transition'] = 'all 0.15s cubic-bezier(0.8, 0, 1, 1) 0s';
+          s['transform'] = 'scale(0, 0)';
+          element.css(s);
+          if (angular.isDefined(animation)) {
+            $timeout(function() {$interval.cancel(animation); animation = undefined;}, 150);
+          }
+        }
+      };
+      var spin = function() {
+        spinner.css({'transform': 'rotate(' + angle + 'deg)'});
+        angle = angle + 360;
+      };
+      toggle();
+      attrs.$observe('active', function(value) {
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            active = val;
+            toggle();
+          } else {
+            active = val;
+            toggle();
+          }
+        }
+      });
+    }
+  };
+}]);
+
 })();
