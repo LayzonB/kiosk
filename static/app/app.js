@@ -540,10 +540,24 @@ mdApp.component('mdBrief', {
   }
 });
 
-mdApp.component('mdLoader', {
+mdApp.component('mdLoaderRaised', {
   template: `<md-full-screen-case>
               <md-modal-screen md-modal-fade-screen="{{$ctrl.alive}}"></md-modal-screen>
-              <md-spinner active="{{$ctrl.alive}}"></md-spinner>
+              <md-spinner-raised active="{{$ctrl.alive}}"></md-spinner-raised>
+            </md-full-screen-case>`,
+  transclude: true,
+  controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
+  bindings: {
+    onOpen: '&',
+    onClose: '&',
+    active: '<'
+  }
+});
+
+mdApp.component('mdLoaderFlat', {
+  template: `<md-full-screen-case>
+              <md-modal-screen-opaque md-modal-fade="{{$ctrl.alive}}"></md-modal-screen-opaque>
+              <md-spinner-flat active="{{$ctrl.alive}}"></md-spinner-flat>
             </md-full-screen-case>`,
   transclude: true,
   controller: ['$scope', '$element', '$attrs', '$timeout', modalController],
@@ -1122,11 +1136,11 @@ mdApp.component('mdCartCountries', {
   controller: ['$scope', '$element', '$attrs', function($scope, $element, $attrs) {
     var ctrl = this;
     
-    var getCountries = function() {
+    var getCountries = function(count) {
       var remaining = ctrl.settings.countries.length - ctrl.countries.data.length;
       var end;
-      if (remaining > 50) {
-        end = ctrl.countries.data.length + 50;
+      if (remaining > count) {
+        end = ctrl.countries.data.length + count;
         ctrl.countries.has_more = true;
       } else {
         end = ctrl.countries.data.length + remaining;
@@ -1137,7 +1151,7 @@ mdApp.component('mdCartCountries', {
     
     ctrl.loadMoreCountries = function() {
       if (ctrl.countries.has_more) {
-        getCountries();
+        getCountries(40);
       }
     };
     
@@ -1148,7 +1162,7 @@ mdApp.component('mdCartCountries', {
     ctrl.$onInit = function() {
       ctrl.option = false;
       ctrl.countries = {'data': [], 'has_more': false};
-      getCountries();
+      getCountries(40);
     };
   }],
   bindings: {
@@ -1706,8 +1720,7 @@ mdApp.component('mdCart', {
             <md-cart-countries settings="$ctrl.settings"
                                sample="$ctrl.selectedCountry"
                                ng-if="$ctrl.countriesDialog"
-                               on-select="$ctrl.selectCountry(value)"></md-cart-countries>
-            <md-loader active="$ctrl.disabled" ng-if="$ctrl.loader" on-close="$ctrl.closeLoader()"></md-loader>`,
+                               on-select="$ctrl.selectCountry(value)"></md-cart-countries>`,
   controller: ['$scope', '$element', '$attrs', '$timeout', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $timeout, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
     
@@ -1716,16 +1729,13 @@ mdApp.component('mdCart', {
       $timeout(function() {ctrl.order = {};}, 300);
     };
     
-    ctrl.closeLoader = function() {
-      ctrl.loader = false;
-    };
-    
     ctrl.deleteCart = function(value) {
       ctrl.deleteDialog = false;
       if (value) {
         ctrl.disabled = true;
-        ctrl.loader = true;
+        mdIntercomFactory.get('showRaisedLoader')();
         mdCartFactory.deleteCart(function(response) {
+          mdIntercomFactory.get('hideRaisedLoader')();
           ctrl.disabled = false;
           ctrl.cart = mdCartFactory.getCart();
           mdIntercomFactory.get('error')(response);
@@ -1756,7 +1766,7 @@ mdApp.component('mdCart', {
     
     ctrl.stepThree = function() {
       ctrl.disabled = true;
-      ctrl.loader = true;
+      mdIntercomFactory.get('showRaisedLoader')();
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           $timeout(function() {ctrl.step = 3;});
@@ -1764,13 +1774,16 @@ mdApp.component('mdCart', {
         } else {
           mdIntercomFactory.get('error')(response);
         }
-        $timeout(function() {ctrl.disabled = false;}, 300);
+        $timeout(function() {
+          mdIntercomFactory.get('hideRaisedLoader')();
+          ctrl.disabled = false;
+        }, 300);
       });
     };
     
     ctrl.stepFour = function() {
       ctrl.disabled = true;
-      ctrl.loader = true;
+      mdIntercomFactory.get('showRaisedLoader')();
       mdCartFactory.saveCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           $timeout(function() {ctrl.step = 4;});
@@ -1778,13 +1791,16 @@ mdApp.component('mdCart', {
         } else {
           mdIntercomFactory.get('error')(response);
         }
-        $timeout(function() {ctrl.disabled = false;}, 300);
+        $timeout(function() {
+          mdIntercomFactory.get('hideRaisedLoader')();
+          ctrl.disabled = false;
+        }, 300);
       });
     };
     
     ctrl.stepFive = function() {
       ctrl.disabled = true;
-      ctrl.loader = true;
+      mdIntercomFactory.get('showRaisedLoader')();
       mdCartFactory.payCart(function(response) {
         if ((response.status > 199) && (response.status < 300)) {
           ctrl.order = angular.merge({}, mdCartFactory.getCart());
@@ -1798,7 +1814,10 @@ mdApp.component('mdCart', {
         } else {
           mdIntercomFactory.get('error')(response);
         }
-        $timeout(function() {ctrl.disabled = false;}, 300);
+        $timeout(function() {
+          mdIntercomFactory.get('hideRaisedLoader')();
+          ctrl.disabled = false;
+        }, 300);
       });
     };
     
@@ -1821,7 +1840,6 @@ mdApp.component('mdCart', {
       }
       ctrl.order = {};
       ctrl.disabled = false;
-      ctrl.loader = false;
       ctrl.dialog = true;
       ctrl.deleteDialog = false;
       ctrl.countriesDialog = false;
@@ -2203,6 +2221,7 @@ mdApp.component('mdProduct', {
     
     ctrl.$onInit = function() {
       ctrl.dialog = true;
+      mdIntercomFactory.get('showFlatLoader')();
       //ctrl.sku = false;
       ctrl.attribute = false;
       if (ctrl.productId) {
@@ -2213,15 +2232,13 @@ mdApp.component('mdProduct', {
             if (sku) {
               ctrl.sku = sku;
               ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
+              mdIntercomFactory.get('hideFlatLoader')();
             }
           }
         }, mdIntercomFactory.get('error'));
       }
     };
     
-    ctrl.$onChanges = function(changes) {
-      
-    };
     
   }],
   bindings: {
@@ -2312,6 +2329,8 @@ mdApp.component('mdHome', {
                         sku-id="$ctrl.skuId"
                         ng-if="$ctrl.productId"
                         on-exit="$ctrl.closeProduct()"></md-product>
+            <md-loader-flat active="$ctrl.activeLoaderFlat" ng-if="$ctrl.loaderFlat" on-close="$ctrl.closeLoader()"></md-loader-flat>
+            <md-loader-raised active="$ctrl.activeLoaderRaised" ng-if="$ctrl.loaderRaised" on-close="$ctrl.closeLoader()"></md-loader-raised>
             <md-brief message="$ctrl.message" ng-if="$ctrl.message" on-hide="$ctrl.eraseMessage()"></md-brief>`,
   controller: ['$scope', '$element', '$attrs', '$http', 'mdCartFactory', 'mdIntercomFactory', function($scope, $element, $attrs, $http, mdCartFactory, mdIntercomFactory) {
     var ctrl = this;
@@ -2334,6 +2353,11 @@ mdApp.component('mdHome', {
       ctrl.cartDialog = false;
     };
     
+    ctrl.closeLoader = function() {
+      ctrl.loaderFlat = false;
+      ctrl.loaderRaised = false;
+    };
+    
     ctrl.eraseMessage = function() {
       ctrl.message = false;
     };
@@ -2341,11 +2365,30 @@ mdApp.component('mdHome', {
     ctrl.$onInit = function() {
       mdIntercomFactory.register('error', function(response) {
         if (response.data && response.data.error && ctrl.settings.errors[response.data.error]) {
+          ctrl.activeLoaderFlat = false;
+          ctrl.activeLoaderRaised = false;
           ctrl.message = ctrl.settings.errors[response.data.error];
         } else if (response.status && ctrl.settings.errors[response.status.toString()]) {
+          ctrl.activeLoaderFlat = false;
+          ctrl.activeLoaderRaised = false;
           ctrl.message = ctrl.settings.errors[response.status.toString()];
         }
       });
+      mdIntercomFactory.register('showFlatLoader', function() {
+        ctrl.loaderFlat = true;
+        ctrl.activeLoaderFlat = true;
+      });
+      mdIntercomFactory.register('hideFlatLoader', function() {
+        ctrl.activeLoaderFlat = false;
+      });
+      mdIntercomFactory.register('showRaisedLoader', function() {
+        ctrl.loaderRaised = true;
+        ctrl.activeLoaderRaised = true;
+      });
+      mdIntercomFactory.register('hideRaisedLoader', function() {
+        ctrl.activeLoaderRaised = false;
+      });
+      mdIntercomFactory.get('showFlatLoader')();
       ctrl.message = false;
       ctrl.productId = false;
       ctrl.cartDialog = false;
@@ -2362,12 +2405,9 @@ mdApp.component('mdHome', {
         }, mdIntercomFactory.get('error'));
         mdCartFactory.createCart(function(response) {
           mdIntercomFactory.get('error')(response);
+          mdIntercomFactory.get('hideFlatLoader')();
         });
       }, mdIntercomFactory.get('error'));
-    };
-    
-    ctrl.$onChanges = function(changes) {
-      
     };
   }],
   bindings: {

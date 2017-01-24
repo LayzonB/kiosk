@@ -82,23 +82,6 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     return extend(template, style);
   };
   
-  var socicon = function(style) {
-    var template = {
-      'font-family': 'Mono Social Icons Font',
-      'display': 'inline-block',
-      'line-height': '1',
-      'text-align': 'center',
-      'white-space': 'nowrap',
-      'vertical-align': 'middle',
-      'color': 'rgba(0, 0, 0, 0.54)',
-      'font-size': '24px',
-      'text-rendering': 'optimizeLegibility',
-      'font-smoothing': 'antialiased',
-      'transition': 'all 0.2s linear 0s',
-    };
-    return extend(template, style);
-  };
-  
   var font = function(name, style) {
     //'font-family': 'inherit',
     var template = {
@@ -422,7 +405,8 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
   
   var ripple = function(element, theme) {
     var timer_delay;
-    var s = {
+    var surface = angular.element('<div></div>');
+    surface.css(general({
       'position': 'absolute',
       'background': 'rgba(0, 0, 0, 0.08)',
       'border-radius': '50%',
@@ -432,9 +416,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       'width': '48px',
       'transform': 'scale(0, 0)',
       'opacity': '0',
-    };
-    var surface = angular.element('<div></div>');
-    surface.css(general(s));
+    }));
     element.append(surface);
     theme = theme || 'icon-dark';
     if (theme === 'tracking-dark') {
@@ -443,12 +425,11 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
       surface.css({'background': 'rgba(255, 255, 255, 0.20)'});
     }
     var resetAnimation = function() {
-      var s = {
+      surface.css({
         'transition': 'all 0s ease 0s',
         'transform': 'scale(0, 0)',
         'opacity': '0',
-      };
-      surface.css(s);
+      });
     };
     var position = function(event) {
       var parent_width = element[0].clientWidth;
@@ -459,20 +440,19 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
         parent_diagonal = 2000;
       }
       var margin = -(parent_diagonal/2);
-      var s = {
+      surface.css({
         'top': (event.clientY - element_position.top).toString(),
         'left': (event.clientX - element_position.left).toString(),
         'height': parent_diagonal.toString(),
         'width': parent_diagonal.toString(),
         'margin-top': margin.toString(),
         'margin-left': margin.toString(),
-      };
-      surface.css(s);
+      });
     };
     var animate = function(opacityInterval, scaleInterval) {
       var OI = (opacityInterval / 1000).toString();
       var SI = (scaleInterval / 1000).toString();
-      var s = {
+      surface.css({
         'transition': 'opacity ' + OI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
                       -webkit-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
                       -moz-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
@@ -481,8 +461,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
                       transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s',
         'transform': 'scale(1, 1)',
         'opacity': '1',
-      };
-      surface.css(s);
+      });
       $timeout(function() {surface.css({'opacity': '0'});}, opacityInterval);
       timer_delay = $timeout(function() {resetAnimation();}, scaleInterval);
     };
@@ -548,6 +527,102 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     };
   };
   
+  var mdSpinnerEffects = function(name) {
+    return function(scope, element, attrs) {
+      var active = false;
+      var s = {
+        'border-radius': '50%',
+        'background': 'rgba(255, 255, 255, 1)',
+        'z-index': '200',
+      };
+      if (name === 'mdSpinnerFlat') {
+        s['padding'] = '12px';
+      } else if (name === 'mdSpinnerRaised') {
+        s['padding'] = '8px';
+        s['box-shadow'] = '0 1.5px 3px 0.75px rgba(0, 0, 0, 0.26)';
+      }
+      element.css(general(s));
+      var spinner = angular.element('<div></div>');
+      spinner.css(general({
+        'width': '32px',
+        'height': '32px',
+        'border-radius': '50%',
+        'background': 'rgba(255, 255, 255, 1)',
+        'transition': 'all 12s linear 0s',
+      }));
+      var arc = angular.element('<div></div>');
+      arc.css(general({
+        'position': 'absolute',
+        'width': '50%',
+        'height': '100%',
+        'background': 'linear-gradient(rgba(0, 0, 0, 0.54), rgba(0, 0, 0, 0))',
+        'border-radius': '100% 0 0 100% / 50% 0 0 50%',
+        'transform-origin': '100% 50%',
+        'z-index': '100',
+      }));
+      var pin = angular.element('<div></div>');
+      pin.css(general({
+        'position': 'absolute',
+        'border-radius': '50%',
+        'width': '24px',
+        'height': '24px',
+        'background': 'rgba(255, 255, 255, 1)',
+        'opacity': '1',
+        'top': '4px',
+        'left': '4px',
+        'z-index': '200',
+      }));
+      spinner.append(arc);
+      spinner.append(pin);
+      element.append(spinner);
+      var toggle = function() {
+        var s = {};
+        if (active) {
+          var angle = 3600;
+          var spin = function() {
+            spinner.css({'transform': 'rotate(' + angle + 'deg)'});
+            angle = angle + 3600;
+            $timeout(function() {
+              if (active) {
+                spin();
+              }
+            }, 12000);
+          };
+          spin();
+          if (name === 'mdSpinnerFlat') {
+            s['transition'] = 'all 0.3s linear 0s';
+            s['opacity'] = '1';
+          } else if (name === 'mdSpinnerRaised') {
+            s['transition'] = 'all 0.15s cubic-bezier(0, 0, 0.4, 1) 0s';
+            s['transform'] = 'scale(1, 1)';
+          }
+        } else {
+          if (name === 'mdSpinnerFlat') {
+            s['transition'] = 'all 0.3s linear 0s';
+            s['opacity'] = '0';
+          } else if (name === 'mdSpinnerRaised') {
+            s['transition'] = 'all 0.15s cubic-bezier(0.8, 0, 1, 1) 0s';
+            s['transform'] = 'scale(0, 0)';
+          }
+        }
+        element.css(s);
+      };
+      toggle();
+      attrs.$observe('active', function(value) {
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            active = val;
+            $timeout(function() {toggle();});
+          } else {
+            active = val;
+            $timeout(function() {toggle();});
+          }
+        }
+      });
+    }
+  };
+  
   var calculateContainer = function (containerWidth, minItemWidth) {
     var itemCount = 2;
     while (true) {
@@ -571,13 +646,13 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     'pad': pad,
     'general': general,
     'icon': icon,
-    'socicon': socicon,
     'font': font,
     'modal': modal,
     'page': page,
     'collections': collections,
     'ripple': ripple,
     'mdModalEffects': mdModalEffects,
+    'mdSpinnerEffects': mdSpinnerEffects,
     'calculateContainer': calculateContainer,
   };
 }]);
@@ -602,14 +677,13 @@ mdUXUI.directive('mdContent', ['$timeout', 'mdStyle', function($timeout, mdStyle
 mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('label', mdStyle.general({
         'padding-top': '2px',
         'min-height': '22px',
         'transform-origin': 'left top 0px',
         'transform': 'translate(0px, 28px) scale(1)',
         'transition': 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) 0s',
-      };
-      element.css(mdStyle.font('label', mdStyle.general(s)));
+      })));
       var error = false;
       var disabled = false;
       var focus = false;
@@ -667,11 +741,10 @@ mdUXUI.directive('mdInputLabel', ['$timeout', 'mdStyle', function($timeout, mdSt
 mdUXUI.directive('mdInputHelper', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('helper', mdStyle.general({
         'padding': '4px 0',
         'min-height': '22px',
-      };
-      element.css(mdStyle.font('helper', mdStyle.general(s)));
+      })));
     }
   };
 }]);
@@ -679,14 +752,13 @@ mdUXUI.directive('mdInputHelper', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdInputText', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('input', mdStyle.general({
         'cursor': 'text',
         'padding': '8px 0 7px',
         'border-bottom': '1px solid rgba(0, 0, 0, 0.12)',
         'width': '100%',
         'min-height': '36px',
-      };
-      element.css(mdStyle.font('input', mdStyle.general(s)));
+      })));
     }
   };
 }]);
@@ -694,16 +766,15 @@ mdUXUI.directive('mdInputText', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdInputNumber', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      //'width': '96px',
+      element.css(mdStyle.font('display1', mdStyle.misc('textCenter', mdStyle.general({
         'cursor': 'text',
         'padding': '4px ',
         'border': 'none',
         'min-height': '36px',
         'appearance': 'none',
         'width': '100%',
-      };
-      //'width': '96px',
-      element.css(mdStyle.font('display1', mdStyle.misc('textCenter', mdStyle.general(s))));
+      }))));
     }
   };
 }]);
@@ -711,14 +782,13 @@ mdUXUI.directive('mdInputNumber', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdInputSelection', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('input', mdStyle.general({
         'cursor': 'pointer',
         'padding': '8px 0 7px',
         'border-bottom': '1px solid rgba(0, 0, 0, 0.12)',
         'width': '100%',
         'min-height': '36px',
-      };
-      element.css(mdStyle.font('input', mdStyle.general(s)));
+      })));
     }
   };
 }]);
@@ -726,14 +796,13 @@ mdUXUI.directive('mdInputSelection', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdInputSelectionIcon', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general({
         'position': 'absolute',
         'overflow': 'hidden',
         'font-size': '24px',
         'right': '0',
         'top': '6px',
-      };
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
+      }))));
     }
   };
 }]);
@@ -741,7 +810,7 @@ mdUXUI.directive('mdInputSelectionIcon', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdButtonIconRaised', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general({
         'width': '48px',
         'height': '48px',
         'padding': '12px',
@@ -749,8 +818,7 @@ mdUXUI.directive('mdButtonIconRaised', ['mdStyle', function(mdStyle) {
         'color': 'rgba(255, 255, 255, 1)',
         'text-shadow': '1px 2px 2px rgba(0, 0, 0, 0.54)',
         'cursor': 'pointer',
-      };
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
+      }))));
       mdStyle.ripple(element, 'icon-dark');
       element.on('mousedown', function(event) {
         element.css({'text-shadow': '2px 4px 4px rgba(0, 0, 0, 0.54)'});
@@ -765,15 +833,14 @@ mdUXUI.directive('mdButtonIconRaised', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general({
         'width': '48px',
         'height': '48px',
         'padding': '12px',
         'overflow': 'hidden',
         'color': 'rgba(0, 0, 0, 0.54)',
         'cursor': 'pointer',
-      };
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general(s))));
+      }))));
       mdStyle.ripple(element, 'icon-dark');
     }
   };
@@ -782,7 +849,7 @@ mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('button', mdStyle.general({
         'min-width': '64px',
         'height': '36px',
         'padding': '6px 8px',
@@ -792,8 +859,7 @@ mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
         'background': 'rgba(255, 255, 255, 1)',
         'color': 'rgba(0, 0, 0, 0.87)',
         'cursor': 'pointer',
-      };
-      element.css(mdStyle.font('button', mdStyle.general(s)));
+      })));
       mdStyle.ripple(element, 'tracking-dark');
     }
   };
@@ -802,7 +868,7 @@ mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('button', mdStyle.general({
         'min-width': '64px',
         'height': '36px',
         'padding': '6px 8px',
@@ -813,8 +879,7 @@ mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
         'color': 'rgba(0, 0, 0, 0.87)',
         'cursor': 'pointer',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.font('button', mdStyle.general(s)));
+      })));
       mdStyle.ripple(element, 'tracking-dark');
     }
   };
@@ -823,12 +888,11 @@ mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdButtonComposite', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'overflow': 'hidden',
         'width': '100%',
         'cursor': 'pointer',
-      };
-      element.css(mdStyle.general(s));
+      }));
       mdStyle.ripple(element, attrs.theme);
     }
   };
@@ -853,11 +917,10 @@ mdUXUI.directive('mdFullScreenCase', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdDrawerWideCase', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('case', {
         'padding': '0 0 0 56px',
         'justify-content': 'flex-end',
-      };
-      element.css(mdStyle.modal('case', s));
+      }));
     }
   };
 }]);
@@ -865,11 +928,10 @@ mdUXUI.directive('mdDrawerWideCase', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdDrawerNarrowCase', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('case', {
         'padding': '0 0 0 56px',
         'justify-content': 'flex-end',
-      };
-      element.css(mdStyle.modal('case', s));
+      }));
     }
   };
 }]);
@@ -877,10 +939,9 @@ mdUXUI.directive('mdDrawerNarrowCase', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdSimpleCase', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('case', {
         'padding': '24px 40px',
-      };
-      element.css(mdStyle.modal('case', s));
+      }));
     }
   };
 }]);
@@ -888,10 +949,9 @@ mdUXUI.directive('mdSimpleCase', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdConfirmationCase', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('case', {
         'padding': '24px 40px',
-      };
-      element.css(mdStyle.modal('case', s));
+      }));
     }
   };
 }]);
@@ -900,6 +960,16 @@ mdUXUI.directive('mdModalScreen', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
       element.css(mdStyle.modal('screen', {}));
+    }
+  };
+}]);
+
+mdUXUI.directive('mdModalScreenOpaque', ['mdStyle', function(mdStyle) {
+  return {
+    link: function(scope, element, attrs) {
+      element.css(mdStyle.modal('screen', {
+        'background': 'rgba(255, 255, 255, 1)'
+      }));
     }
   };
 }]);
@@ -949,13 +1019,12 @@ mdUXUI.directive('mdModalFadeScreen', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdFullScreenSheet', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('sheet', {
         'width': '100%',
         'min-width': '224px',
         'height': '100%',
         'box-shadow': '0 0 16px 4px rgba(0, 0, 0, 0.26)'
-      };
-      element.css(mdStyle.modal('sheet', s));
+      }));
     }
   };
 }]);
@@ -963,14 +1032,13 @@ mdUXUI.directive('mdFullScreenSheet', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdDrawerWideSheet', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('sheet', {
         'width': '100%',
         'min-width': '168px',
         'max-width': '560px',
         'height': '100%',
         'box-shadow': '0 0 16px 4px rgba(0, 0, 0, 0.26)'
-      };
-      element.css(mdStyle.modal('sheet', s));
+      }));
     }
   };
 }]);
@@ -978,14 +1046,13 @@ mdUXUI.directive('mdDrawerWideSheet', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdDrawerNarrowSheet', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('sheet', {
         'width': '100%',
         'min-width': '168px',
         'max-width': '280px',
         'height': '100%',
         'box-shadow': '0 0 16px 4px rgba(0, 0, 0, 0.26)'
-      };
-      element.css(mdStyle.modal('sheet', s));
+      }));
     }
   };
 }]);
@@ -993,7 +1060,7 @@ mdUXUI.directive('mdDrawerNarrowSheet', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdSimpleSheet', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('sheet', {
         'position': 'relative',
         'border-radius': '2px',
         'width': '100%',
@@ -1001,8 +1068,7 @@ mdUXUI.directive('mdSimpleSheet', ['mdStyle', function(mdStyle) {
         'max-width': '560px',
         'height': '100%',
         'box-shadow': '0 12px 24px 6px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.modal('sheet', s));
+      }));
     }
   };
 }]);
@@ -1010,15 +1076,14 @@ mdUXUI.directive('mdSimpleSheet', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdConfirmationSheet', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.modal('sheet', {
         'position': 'relative',
         'border-radius': '2px',
         'width': '100%',
         'min-width': '168px',
         'max-width': '560px',
         'box-shadow': '0 12px 24px 6px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.modal('sheet', s));
+      }));
     }
   };
 }]);
@@ -1050,7 +1115,7 @@ mdUXUI.directive('mdPage', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
 mdUXUI.directive('mdAppBar', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'position': 'absolute',
         'overflow': 'hidden',
         'background': 'rgba(255, 255, 255, 1)',
@@ -1060,8 +1125,7 @@ mdUXUI.directive('mdAppBar', ['$timeout', 'mdStyle', function($timeout, mdStyle)
         'z-index': '300',
         'box-shadow': '0 2px 4px 1px rgba(0, 0, 0, 0.26)',
         'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
-      };
-      element.css(mdStyle.general(s));
+      }));
       attrs.$observe('top', function(value) {
         element.css({'transform': 'translate(0px, ' + value.toString() + 'px)'});
       });
@@ -1072,7 +1136,7 @@ mdUXUI.directive('mdAppBar', ['$timeout', 'mdStyle', function($timeout, mdStyle)
 mdUXUI.directive('mdSnackBar', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'position': 'fixed',
         'overflow': 'hidden',
         'background': 'rgba(0, 0, 0, 0.80)',
@@ -1082,8 +1146,7 @@ mdUXUI.directive('mdSnackBar', ['mdStyle', function(mdStyle) {
         'padding': '24px 16px',
         'z-index': '300',
         'box-shadow': '0px 3px 6px 1.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1138,12 +1201,11 @@ mdUXUI.directive('mdAction', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdGrid', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.collections({
         'padding': '7px 1px',
         'flex-direction': 'row',
         'flex-wrap': 'wrap',
-      };
-      element.css(mdStyle.collections(s));
+      }));
       var minItemWidth = parseInt(attrs.minItemWidth);
       var calculateContainer = function() {
         var width = (parseInt(element.width()) - 2);
@@ -1165,8 +1227,7 @@ mdUXUI.directive('mdGrid', ['$window', 'mdStyle', function($window, mdStyle) {
 mdUXUI.directive('mdGridCell', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {'padding': '1px'};
-      element.css(mdStyle.general(s));
+      element.css(mdStyle.general({'padding': '1px'}));
     }
   };
 }]);
@@ -1182,10 +1243,9 @@ mdUXUI.directive('mdGridCellTile', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdList', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.collections({
         'padding': '8px 0',
-      };
-      element.css(mdStyle.collections(s));
+      }));
     }
   };
 }]);
@@ -1219,13 +1279,12 @@ mdUXUI.directive('mdListCellTile', ['mdStyle', function(mdStyle) {
       } else if (attrs.side === 'right') {
         right = attrs.dialog ? '72px' : '56px';
       }
-      var s = {
+      element.css(mdStyle.general({
         'padding-top': top,
         'padding-bottom': bottom,
         'padding-left': left,
         'padding-right': right
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1233,10 +1292,9 @@ mdUXUI.directive('mdListCellTile', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdListSubheader', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.font('subheader', mdStyle.general({
         'padding': '4px 16px 12px 16px',
-      };
-      element.css(mdStyle.font('subheader', mdStyle.general(s)));
+      })));
     }
   };
 }]);
@@ -1277,10 +1335,9 @@ mdUXUI.directive('mdFade', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
 mdUXUI.directive('mdCards', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.collections({
         'padding': '4px',
-      };
-      element.css(mdStyle.collections(s));
+      }));
     }
   };
 }]);
@@ -1288,10 +1345,9 @@ mdUXUI.directive('mdCards', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdCardsCell', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'padding': '4px',
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1299,11 +1355,10 @@ mdUXUI.directive('mdCardsCell', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdCardsCellTile', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'border-radius': '2px',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1319,10 +1374,9 @@ mdUXUI.directive('mdWall', ['$window', 'mdStyle', function($window, mdStyle) {
         'column-span': '1',
         'column-width': 'auto',
       };*/
-      var s = {
+      element.css(mdStyle.general({
         'padding': '4px',
-      };
-      element.css(mdStyle.general(s));
+      }));
       var minItemWidth = parseInt(attrs.minItemWidth);
       var calculateContainer = function() {
         var width = parseInt(element.width());
@@ -1349,11 +1403,10 @@ mdUXUI.directive('mdWallCell', ['mdStyle', function(mdStyle) {
         'padding': '4px',
         'break-inside': 'avoid',
       };*/
-      var s = {
+      element.css(mdStyle.general({
         'padding': '4px',
         'float': 'left',
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1361,11 +1414,10 @@ mdUXUI.directive('mdWallCell', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdWallCellTile', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'border-radius': '2px',
         'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1381,14 +1433,13 @@ mdUXUI.directive('mdCarouselFrame', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdCarousel', ['$window', '$timeout', 'mdStyle', function($window, $timeout, mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.collections({
         'justify-content': 'flex-start',
         'flex-direction': 'row',
         'transition': 'all 0.3s cubic-bezier(0.8, 0, 0.4, 1) 0s',
         'height': '100%',
         'width': '100%',
-      };
-      element.css(mdStyle.collections(s));
+      }));
       var position = 0;
       var index = attrs.index ? parseInt(attrs.index) : 0;
       var setCarouselSize = function() {
@@ -1428,23 +1479,21 @@ mdUXUI.directive('mdCarousel', ['$window', '$timeout', 'mdStyle', function($wind
 mdUXUI.directive('mdCarouselCell', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.collections({
         'justify-content': 'center',
         'flex-direction': 'row',
         'align-items': 'center',
-      };
-      element.css(mdStyle.collections(s));
+      }));
       var width, height;
       width = 0;
       height = 0;
       var setSize = function() {
-        var s = {
+        element.css({
           'min-width': width.toString() + 'px',
           'min-height': height.toString() + 'px',
           'max-width': width.toString() + 'px',
           'max-height': height.toString() + 'px',
-        };
-        element.css(s);
+        });
       };
       setSize();
       attrs.$observe('mdWidth', function(value) {
@@ -1529,15 +1578,14 @@ mdUXUI.directive('mdImg', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdLattice', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.collections({
         'padding': '16px 0',
         'justify-content': 'space-around',
         'align-items': 'center',
         'align-content': 'space-around',
         'flex-direction': 'row',
         'flex-wrap': 'wrap',
-      };
-      element.css(mdStyle.collections(s));
+      }));
     }
   };
 }]);
@@ -1553,7 +1601,7 @@ mdUXUI.directive('mdLatticeCell', ['mdStyle', function(mdStyle) {
 mdUXUI.directive('mdLatticeCellTile', ['mdStyle', function(mdStyle) {
   return {
     link: function(scope, element, attrs) {
-      var s = {
+      element.css(mdStyle.general({
         'display': 'flex',
         'padding': '24px',
         'justify-content': 'center',
@@ -1561,8 +1609,7 @@ mdUXUI.directive('mdLatticeCellTile', ['mdStyle', function(mdStyle) {
         'flex-direction': 'column',
         'flex-wrap': 'nowrap',
         'align-items': 'center',
-      };
-      element.css(mdStyle.general(s));
+      }));
     }
   };
 }]);
@@ -1847,90 +1894,17 @@ mdUXUI.directive('mdInfiniteScroll', ['$window', 'mdStyle', function($window, md
   };
 }]);
 
-mdUXUI.directive('mdSpinner', ['$interval', '$timeout', 'mdStyle', function($interval, $timeout, mdStyle) {
+mdUXUI.directive('mdSpinnerFlat', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      var animation;
-      var angle = 360;
-      var active = false;
-      var s = {
-        'padding': '8px',
-        'border-radius': '50%',
-        'background': 'rgba(255, 255, 255, 1)',
-        'box-shadow': '0 1.5px 3px 0.75px rgba(0, 0, 0, 0.26)',
-        'z-index': '200',
-      };
-      element.css(mdStyle.general(s));
-      var spinner = angular.element('<div></div>');
-      spinner.css(mdStyle.general({
-        'width': '32px',
-        'height': '32px',
-        'border-radius': '50%',
-        'background': 'rgba(255, 255, 255, 1)',
-        'transition': 'all 1.2s linear 0s',
-      }));
-      var arc = angular.element('<div></div>');
-      arc.css(mdStyle.general({
-        'position': 'absolute',
-        'width': '50%',
-        'height': '100%',
-        'background': 'linear-gradient(rgba(0, 0, 0, 0.54), rgba(0, 0, 0, 0))',
-        'border-radius': '100% 0 0 100% / 50% 0 0 50%',
-        'transform-origin': '100% 50%',
-        'z-index': '100',
-      }));
-      var pin = angular.element('<div></div>');
-      pin.css(mdStyle.general({
-        'position': 'absolute',
-        'border-radius': '50%',
-        'width': '24px',
-        'height': '24px',
-        'background': 'rgba(255, 255, 255, 1)',
-        'opacity': '1',
-        'top': '4px',
-        'left': '4px',
-        'z-index': '200',
-      }));
-      spinner.append(arc);
-      spinner.append(pin);
-      element.append(spinner);
-      var toggle = function() {
-        var s = {};
-        if (active) {
-          animation = $interval(function() {
-            spinner.css({'transform': 'rotate(' + angle + 'deg)'});
-            angle = angle + 360;
-          }, 1200);
-          s['transition'] = 'all 0.15s cubic-bezier(0, 0, 0.4, 1) 0s';
-          s['transform'] = 'scale(1, 1)';
-          element.css(s);
-        } else {
-          s['transition'] = 'all 0.15s cubic-bezier(0.8, 0, 1, 1) 0s';
-          s['transform'] = 'scale(0, 0)';
-          element.css(s);
-          if (angular.isDefined(animation)) {
-            $timeout(function() {$interval.cancel(animation); animation = undefined;}, 150);
-          }
-        }
-      };
-      var spin = function() {
-        spinner.css({'transform': 'rotate(' + angle + 'deg)'});
-        angle = angle + 360;
-      };
-      toggle();
-      attrs.$observe('active', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          if (val) {
-            active = val;
-            toggle();
-          } else {
-            active = val;
-            toggle();
-          }
-        }
-      });
-    }
+    priority: 5,
+    link: mdStyle.mdSpinnerEffects('mdSpinnerFlat')
+  };
+}]);
+
+mdUXUI.directive('mdSpinnerRaised', ['mdStyle', function(mdStyle) {
+  return {
+    priority: 5,
+    link: mdStyle.mdSpinnerEffects('mdSpinnerRaised')
   };
 }]);
 
