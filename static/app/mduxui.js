@@ -1214,11 +1214,11 @@ mdUXUI.directive('mdGrid', ['$window', 'mdStyle', function($window, mdStyle) {
       calculateContainer();
       angular.element($window).on('resize', function() {
         calculateContainer();
-        scope.$apply();
+        scope.$applyAsync();
       });
       angular.element($window).on('load', function() {
         calculateContainer();
-        scope.$apply();
+        scope.$applyAsync();
       });
     }
   };
@@ -1386,11 +1386,11 @@ mdUXUI.directive('mdWall', ['$window', 'mdStyle', function($window, mdStyle) {
       calculateContainer();
       angular.element($window).on('resize', function() {
         calculateContainer();
-        scope.$apply();
+        scope.$applyAsync();
       });
       angular.element($window).on('load', function() {
         calculateContainer();
-        scope.$apply();
+        scope.$applyAsync();
       });
     }
   };
@@ -1458,12 +1458,12 @@ mdUXUI.directive('mdCarousel', ['$window', '$timeout', 'mdStyle', function($wind
       };
       angular.element($window).on('resize', function() {
         setCarouselSize();
-        scope.$apply();
+        scope.$applyAsync();
         $timeout(function() {setPosition();});
       });
       angular.element($window).on('load', function() {
         setCarouselSize();
-        scope.$apply();
+        scope.$applyAsync();
         $timeout(function() {setPosition();});
       });
       attrs.$observe('position', function(value) {
@@ -1708,11 +1708,11 @@ mdUXUI.directive('mdGetWidth', ['$window', 'mdStyle', function($window, mdStyle)
       getWidth();
       angular.element($window).on('resize', function() {
         getWidth();
-        scope.$apply();
+        scope.$applyAsync();
       });
       angular.element($window).on('load', function() {
         getWidth();
-        scope.$apply();
+        scope.$applyAsync();
       });
     }
   };
@@ -1729,11 +1729,11 @@ mdUXUI.directive('mdGetHeight', ['$window', 'mdStyle', function($window, mdStyle
       getHeight();
       angular.element($window).on('resize', function() {
         getHeight();
-        scope.$apply();
+        scope.$applyAsync();
       });
       angular.element($window).on('load', function() {
         getHeight();
-        scope.$apply();
+        scope.$applyAsync();
       });
     }
   };
@@ -1869,24 +1869,29 @@ mdUXUI.directive('mdError', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdInfiniteScroll', ['$window', 'mdStyle', function($window, mdStyle) {
+mdUXUI.directive('mdInfiniteScroll', ['$timeout', 'mdStyle', function($timeout, mdStyle) {
   return {
     priority: 10,
-    scope: {
-      mdInfiniteScroll: '@',
-      mdTrigger: '&'
-    },
     link: function(scope, element, attrs) {
       var raw = element[0];
-      /*while ((raw.offsetHeight === raw.scrollHeight) && scope.$eval(scope.mdInfiniteScroll)) {
-        scope.mdTrigger();
-        scope.$apply();
-      }*/
+      var load = function() {
+        if ((raw.offsetHeight === raw.scrollHeight) && scope.$eval(attrs.mdInfiniteScroll)) {
+          scope.$applyAsync(attrs.mdTrigger);
+          $timeout(function() {load();});
+        }
+      };
       element.on('scroll', function() {
-        if (scope.$eval(scope.mdInfiniteScroll)) {
+        if (scope.$eval(attrs.mdInfiniteScroll)) {
           if (raw.scrollTop + raw.offsetHeight + 8 >= raw.scrollHeight) {
-            scope.mdTrigger();
-            scope.$apply();
+            scope.$applyAsync(attrs.mdTrigger);
+          }
+        }
+      });
+      attrs.$observe('mdInfiniteScroll', function(value) {
+        var val = scope.$eval(value);
+        if (typeof(val) === 'boolean') {
+          if (val) {
+            $timeout(function() {load();});
           }
         }
       });

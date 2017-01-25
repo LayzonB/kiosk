@@ -2232,9 +2232,13 @@ mdApp.component('mdProduct', {
             if (sku) {
               ctrl.sku = sku;
               ctrl.skuQuantity = mdCartFactory.getCartItemQuantity(ctrl.sku.id);
-              mdIntercomFactory.get('hideFlatLoader')();
+            } else {
+              mdIntercomFactory.get('error')({'data': {'error': 'missing_sku'}});
             }
+          } else {
+            mdIntercomFactory.get('error')({'data': {'error': 'missing_product'}});
           }
+          mdIntercomFactory.get('hideFlatLoader')();
         }, mdIntercomFactory.get('error'));
       }
     };
@@ -2250,46 +2254,47 @@ mdApp.component('mdProduct', {
 });
 
 mdApp.component('mdProducts', {
-  template: `<md-wall min-item-width="240">
-              <md-wall-item-multiline-clickable md-width="mdWall.itemWidth" ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({productId: value.id, skuId: false})">
-                <img md-base ng-if="product.images.length"
-                     ng-src="{{product.images[0]}}"
-                     width="100%">
-                <md-base md-pad="24,16">
-                  <md-base md-font="headline" md-content="{{product.name}}"></md-base>
-                  <md-base md-font="body1" md-misc="textTrim" md-content="{{product.description}}" ng-if="product.description"></md-base>
-                </md-base>
-              </md-wall-item-multiline-clickable>
-              <div md-clear></div>
-              <md-cards-item-multiline-clickable ng-if="$ctrl.products.has_more" on-click="$ctrl.loadMoreProducts()">
-                <md-base md-pad="4"
-                         md-icon="avatar"
-                         md-content="refresh"></md-base>
-              </md-cards-item-multiline-clickable>
-            </md-wall>`,
+  template: `<md-page vertical-scroll="scroll" top="56px" md-infinite-scroll="{{$ctrl.products.has_more}}" md-trigger="$ctrl.loadMoreProducts()">
+              <md-wall min-item-width="240">
+                <md-wall-item-multiline-clickable md-width="mdWall.itemWidth" ng-repeat="product in $ctrl.products.data" value="product" on-click="$ctrl.onSelect({productId: value.id, skuId: false})">
+                  <img md-base ng-if="product.images.length"
+                       ng-src="{{product.images[0]}}"
+                       width="100%">
+                  <md-base md-pad="24,16">
+                    <md-base md-font="headline" md-content="{{product.name}}"></md-base>
+                    <md-base md-font="body1" md-misc="textTrim" md-content="{{product.description}}" ng-if="product.description"></md-base>
+                  </md-base>
+                </md-wall-item-multiline-clickable>
+                <div md-clear></div>
+              </md-wall>
+            </md-page>`,
   controller: ['$scope', '$element', '$attrs', '$http', 'mdIntercomFactory',  function($scope, $element, $attrs, $http, mdIntercomFactory) {
     var ctrl = this;
     
-    var getProducts = function(products) {
+    var getProducts = function() {
+      mdIntercomFactory.get('showFlatLoader')();
       var query = '';
-      if (products.has_more) {
-        query = '?start=' + products.data[products.data.length - 1]['id'];
+      if (ctrl.products.has_more) {
+        if (ctrl.products.data.length > 0) {
+          query = '?start=' + ctrl.products.data[ctrl.products.data.length - 1]['id'];
+        }
       }
       $http.get('products' + query, {'cache': true}).then(function(response) {
-        products.data.push.apply(products.data, response.data.data);
-        products.has_more = response.data.has_more;
+        ctrl.products.data.push.apply(ctrl.products.data, response.data.data);
+        ctrl.products.has_more = response.data.has_more;
+        mdIntercomFactory.get('hideFlatLoader')();
       }, mdIntercomFactory.get('error'));
     };
     
     ctrl.loadMoreProducts = function() {
       if (ctrl.products.has_more) {
-        getProducts(ctrl.products);
+        getProducts();
       }
     };
     
     ctrl.$onInit = function() {
       ctrl.products = {'data': [], 'has_more': false};
-      getProducts(ctrl.products);
+      getProducts();
     };
     
     ctrl.$onChanges = function(changes) {
@@ -2314,10 +2319,8 @@ mdApp.component('mdHome', {
                   <button md-button-icon-flat md-content="shopping_cart" ng-click="$ctrl.openCart()"></button>
                 </md-actions>
               </md-app-bar>
-              <md-page vertical-scroll="scroll" top="56px">
-                <md-products settings="$ctrl.settings"
-                             on-select="$ctrl.openProduct(productId, skuId)"></md-products>
-              </md-page>
+              <md-products settings="$ctrl.settings"
+                           on-select="$ctrl.openProduct(productId, skuId)"></md-products>
             </md-full-screen-fade>
             <md-cart settings="$ctrl.settings"
                      cart="$ctrl.cart"
