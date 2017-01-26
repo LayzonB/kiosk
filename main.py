@@ -314,13 +314,10 @@ class Notify(webapp2.RequestHandler):
 
   def post(self):
     self.response.headers['Content-Type'] = 'application/json'
-    hook_types = ['account.updated', 'order.payment_succeeded', 'order_return.created', 
-                  'product.created', 'product.deleted', 'product.updated', 
-                  'sku.created', 'sku.deleted', 'sku.updated']
     try:
       params = json.loads(self.request.body)
       data = stripe.Event.retrieve(params.get('id', ''))
-      if (data.type in hook_types):
+      if (data):
         logging.info('Event type "%s" flushed memecache.' % data.type)
         memcache.flush_all()
     except:
