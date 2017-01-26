@@ -318,8 +318,8 @@ class Notify(webapp2.RequestHandler):
       params = json.loads(self.request.body)
       data = stripe.Event.retrieve(params.get('id', ''))
       if (data):
-        logging.info('Event type "%s" flushed memecache.' % data.type)
         memcache.flush_all()
+        logging.info('Event type "%s" flushed memecache.' % data.type)
     except:
       logging.exception('Rogue webhook received. %s' % params)
 
