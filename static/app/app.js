@@ -1137,16 +1137,19 @@ mdApp.component('mdCartCountries', {
     var ctrl = this;
     
     var getCountries = function(count) {
-      var remaining = ctrl.settings.countries.length - ctrl.countries.data.length;
-      var end;
-      if (remaining > count) {
-        end = ctrl.countries.data.length + count;
-        ctrl.countries.has_more = true;
-      } else {
-        end = ctrl.countries.data.length + remaining;
+      if (ctrl.countries.has_more) {
         ctrl.countries.has_more = false;
+        var remaining = ctrl.settings.countries.length - ctrl.countries.data.length;
+        var end;
+        if (remaining > count) {
+          end = ctrl.countries.data.length + count;
+          ctrl.countries.has_more = true;
+        } else {
+          end = ctrl.countries.data.length + remaining;
+          ctrl.countries.has_more = false;
+        }
+        ctrl.countries.data.push.apply(ctrl.countries.data, ctrl.settings.countries.slice(ctrl.countries.data.length, end));
       }
-      ctrl.countries.data.push.apply(ctrl.countries.data, ctrl.settings.countries.slice(ctrl.countries.data.length, end));
     };
     
     ctrl.loadMoreCountries = function() {
@@ -1161,7 +1164,7 @@ mdApp.component('mdCartCountries', {
     
     ctrl.$onInit = function() {
       ctrl.option = false;
-      ctrl.countries = {'data': [], 'has_more': false};
+      ctrl.countries = {'data': [], 'has_more': true};
       getCountries(40);
     };
   }],
@@ -2272,18 +2275,23 @@ mdApp.component('mdProducts', {
     var ctrl = this;
     
     var getProducts = function() {
-      mdIntercomFactory.get('showFlatLoader')();
-      var query = '';
       if (ctrl.products.has_more) {
+        ctrl.products.has_more = false; // Prevent concurency requests while $http is in progress.
+        mdIntercomFactory.get('showFlatLoader')();
+        var query = '';
         if (ctrl.products.data.length > 0) {
           query = '?start=' + ctrl.products.data[ctrl.products.data.length - 1]['id'];
         }
+        $http.get('products' + query, {'cache': true}).then(function(response) {
+          angular.forEach(response.data.data, function(item, key) {
+            if (ctrl.products.data.indexOf(item) === -1) {
+              ctrl.products.data.push(item);
+            }
+          });
+          ctrl.products.has_more = response.data.has_more;
+          mdIntercomFactory.get('hideFlatLoader')();
+        }, mdIntercomFactory.get('error'));
       }
-      $http.get('products' + query, {'cache': true}).then(function(response) {
-        ctrl.products.data.push.apply(ctrl.products.data, response.data.data);
-        ctrl.products.has_more = response.data.has_more;
-        mdIntercomFactory.get('hideFlatLoader')();
-      }, mdIntercomFactory.get('error'));
     };
     
     ctrl.loadMoreProducts = function() {
@@ -2293,7 +2301,7 @@ mdApp.component('mdProducts', {
     };
     
     ctrl.$onInit = function() {
-      ctrl.products = {'data': [], 'has_more': false};
+      ctrl.products = {'data': [], 'has_more': true};
       getProducts();
     };
     

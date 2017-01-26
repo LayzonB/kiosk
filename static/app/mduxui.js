@@ -1874,24 +1874,29 @@ mdUXUI.directive('mdInfiniteScroll', ['$timeout', 'mdStyle', function($timeout, 
     priority: 10,
     link: function(scope, element, attrs) {
       var raw = element[0];
+      var scrolled = false;
       var load = function() {
-        if ((raw.offsetHeight === raw.scrollHeight) && scope.$eval(attrs.mdInfiniteScroll)) {
-          scope.$applyAsync(attrs.mdTrigger);
-          $timeout(function() {load();});
-        }
-      };
-      element.on('scroll', function() {
-        if (scope.$eval(attrs.mdInfiniteScroll)) {
-          if (raw.scrollTop + raw.offsetHeight + 8 >= raw.scrollHeight) {
-            scope.$applyAsync(attrs.mdTrigger);
+        var has_more = scope.$eval(attrs.mdInfiniteScroll);
+        if (typeof(has_more) === 'boolean') {
+          if (has_more) {
+            if (raw.offsetHeight === raw.scrollHeight) {
+              scope.$applyAsync(attrs.mdTrigger);
+            }
           }
         }
-      });
-      attrs.$observe('mdInfiniteScroll', function(value) {
-        var val = scope.$eval(value);
-        if (typeof(val) === 'boolean') {
-          if (val) {
-            $timeout(function() {load();});
+        if (!scrolled) {
+          $timeout(function() {load();}, 1200);
+        }
+      };
+      $timeout(function() {load();}, 600);
+      element.on('scroll', function() {
+        scrolled = true;
+        var has_more = scope.$eval(attrs.mdInfiniteScroll);
+        if (typeof(has_more) === 'boolean') {
+          if (has_more) {
+            if (raw.scrollTop + raw.offsetHeight + 8 >= raw.scrollHeight) {
+              scope.$applyAsync(attrs.mdTrigger);
+            }
           }
         }
       });
