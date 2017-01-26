@@ -258,7 +258,6 @@ class PayOrder(webapp2.RequestHandler):
       params = json.loads(self.request.body)
       order = stripe.Order.retrieve(params.get('id', ''))
       data = order.pay(source=params.get('source', ''))
-      memcache.flush_all()
       self.response.write(data)
     except stripe.error.APIConnectionError, e:
       self.response.set_status(500)
