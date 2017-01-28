@@ -9,6 +9,7 @@ This module contains the primary objects that power Requests.
 
 import collections
 import datetime
+import sys
 
 # Import encoding now, to avoid implicit import later.
 # Implicit import within threads may cause LookupError when standard library is in a ZIP,
@@ -21,7 +22,6 @@ from .structures import CaseInsensitiveDict
 
 from .auth import HTTPBasicAuth
 from .cookies import cookiejar_from_dict, get_cookie_header, _copy_cookie_jar
-from .packages import idna
 from .packages.urllib3.fields import RequestField
 from .packages.urllib3.filepost import encode_multipart_formdata
 from .packages.urllib3.util import parse_url
@@ -30,7 +30,7 @@ from .packages.urllib3.exceptions import (
 from .exceptions import (
     HTTPError, MissingSchema, InvalidURL, ChunkedEncodingError,
     ContentDecodingError, ConnectionError, StreamConsumedError)
-from ._internal_utils import to_native_string
+from ._internal_utils import to_native_string, unicode_is_ascii
 from .utils import (
     guess_filename, get_auth_from_url, requote_uri,
     stream_decode_response_unicode, to_key_val_list, parse_header_links,
@@ -331,6 +331,22 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         if self.method is not None:
             self.method = to_native_string(self.method.upper())
 
+    @staticmethod
+    def _get_idna_encoded_host(host):
+        try:
+            from .packages import idna
+        except ImportError:
+            # tolerate the possibility of downstream repackagers unvendoring `requests`
+            # For more information, read: packages/__init__.py
+            import idna
+            sys.modules['requests.packages.idna'] = idna
+
+        try:
+            host = idna.encode(host, uts46=True).decode('utf-8')
+        except idna.IDNAError:
+            raise UnicodeError
+        return host
+
     def prepare_url(self, url, params):
         """Prepares the given HTTP URL."""
         #: Accept objects that have string representations.
@@ -342,6 +358,9 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
             url = url.decode('utf8')
         else:
             url = unicode(url) if is_py2 else str(url)
+
+        # Remove leading whitespaces from url
+        url = url.lstrip()
 
         # Don't do any URL preparation for non-HTTP schemes like `mailto`,
         # `data` etc to work around exceptions from `url_parse`, which
@@ -365,10 +384,16 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):
         if not host:
             raise InvalidURL("Invalid URL %r: No host supplied" % url)
 
-        # Only want to apply IDNA to the hostname
-        try:
-            host = idna.encode(host, uts46=True).decode('utf-8')
-        except (UnicodeError, idna.IDNAError):
+        # In general, we want to try IDNA encoding the hostname if the string contains
+        # non-ASCII characters. This allows users to automatically get the correct IDNA
+        # behaviour. For strings containing only ASCII characters, we need to also verify
+        # it doesn't start with a wildcard (*), before allowing the unencoded hostname.
+        if not unicode_is_ascii(host):
+            try:
+                host = self._get_idna_encoded_host(host)
+            except UnicodeError:
+                raise InvalidURL('URL has an invalid label.')
+        elif host.startswith(u'*'):
             raise InvalidURL('URL has an invalid label.')
 
         # Carefully reconstruct the network location
@@ -766,7 +791,7 @@ class Response(object):
                 raise RuntimeError(
                     'The content for this response was already consumed')
 
-            if self.status_code == 0:
+            if self.status_code == 0 or self.raw is None:
                 self._content = None
             else:
                 self._content = bytes().join(self.iter_content(CONTENT_CHUNK_SIZE)) or bytes()
