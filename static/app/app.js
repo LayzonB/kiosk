@@ -51,35 +51,6 @@ mdApp.factory('mdCartFactory', ['$http', '$cookies', function($http, $cookies) {
   var resetCart = function(callback) {
     $http.get('account', {'cache': true}).then(function(response) {
       var account = response.data;
-      var testCart = {
-        'currency': 'usd',
-        'coupon': '',
-        'email': 'margotrobbie@example.com',
-        'items': [{
-          'currency': 'usd',
-          'description': 'Product Name',
-          'amount': 100,
-          'parent': 'sku_9qYkc73aiaE6VG',
-          'product': 'prod_80HnnViSIO0LWc',
-          'quantity': 1,
-          'type': 'sku'
-        }],
-        'shipping': {
-          'name': 'Margot Robbie',
-          'phone': '+12223334444',
-          'address': {
-            'country': 'US',
-            'state': 'California',
-            'city': 'Beverly Hills',
-            'postal_code': '91210',
-            'line1': 'Rodeo Drive 42',
-            'line2': 'Apartment 007'
-          }
-        },
-        'card': {},
-        'amount': '',
-        'status': 'new'
-      };
       var newCart = {
         'currency': account.default_currency,
         'coupon': '',
