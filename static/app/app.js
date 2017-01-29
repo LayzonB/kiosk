@@ -1702,7 +1702,7 @@ mdApp.component('mdCart', {
     };
     
     ctrl.openDelete = function() {
-      $ctrl.deleteDialog = true
+      ctrl.deleteDialog = true
     };
     
     ctrl.deleteCart = function(value) {
