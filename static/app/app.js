@@ -3,8 +3,6 @@
 
 /*--------------------------------------------------App--------------------------------------------------*/
 
-var dataLayer = [];
-
 var mdApp = angular.module('mdApp', ['mdUXUI', 'ngTouch', 'ngCookies']);
 
 mdApp.config([function() {
@@ -1649,7 +1647,7 @@ mdApp.component('mdCart', {
                           md-content="delete"
                           ng-disabled="$ctrl.disabled"
                           md-disabled="{{$ctrl.disabled}}"
-                          ng-click="$ctrl.deleteDialog = true"></button>
+                          ng-click="$ctrl.openDelete()"></button>
                 </md-actions>
               </md-app-bar>
               <md-cart-empty settings="$ctrl.settings"
@@ -1701,6 +1699,10 @@ mdApp.component('mdCart', {
     ctrl.closeCart = function() {
       ctrl.dialog = false;
       $timeout(function() {ctrl.order = {};}, 300);
+    };
+    
+    ctrl.openDelete = function() {
+      $ctrl.deleteDialog = true
     };
     
     ctrl.deleteCart = function(value) {

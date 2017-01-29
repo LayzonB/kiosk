@@ -1,2 +1,2 @@
-stripe_secret_key = "sk_test_key"
-stripe_public_key = "pk_test_key"
+stripe_secret_key = "sk_test_m4QQ4tXt50ceGcWl9MsiA21B"
+stripe_public_key = "pk_test_DgknwndUrYHbYQJHHAjv1RWL"
