@@ -403,78 +403,127 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     return extend(template, style);
   };
   
-  var ripple = function(element, theme) {
-    var timer_delay;
-    var surface = angular.element('<div></div>');
-    surface.css(general({
-      'position': 'absolute',
-      'background': 'rgba(0, 0, 0, 0.08)',
-      'border-radius': '50%',
-      'top': '0px',
-      'left': '0px',
-      'height': '48px',
-      'width': '48px',
-      'transform': 'scale(0, 0)',
-      'opacity': '0',
-    }));
-    element.append(surface);
-    theme = theme || 'icon-dark';
-    if (theme === 'tracking-dark') {
-      surface.css({'background': 'rgba(0, 0, 0, 0.16)'});
-    } else if ((theme === 'tracking-light') || (theme === 'icon-light')) {
-      surface.css({'background': 'rgba(255, 255, 255, 0.20)'});
-    }
-    var resetAnimation = function() {
-      surface.css({
-        'transition': 'all 0s ease 0s',
+  var mdButtonEffects = function(name) {
+    return function(scope, element, attrs) {
+      var timer_delay;
+      var elementStyle = {
+        'overflow': 'hidden',
+        'width': '100%',
+        'cursor': 'pointer',
+      };
+      var surfaceStyle = {
+        'position': 'absolute',
+        'border-radius': '50%',
+        'top': '0px',
+        'left': '0px',
+        'height': '48px',
+        'width': '48px',
         'transform': 'scale(0, 0)',
         'opacity': '0',
-      });
-    };
-    var position = function(event) {
-      var parent_width = element[0].clientWidth;
-      var parent_height = element[0].clientHeight;
-      var element_position = element[0].getBoundingClientRect();
-      var parent_diagonal = 2 * (Math.round(Math.sqrt((parent_width * parent_width) + (parent_height * parent_height))));
-      if (parent_diagonal > 2000) {
-        parent_diagonal = 2000;
+      };
+      if (name === 'mdButtonFlatClick') {
+        surfaceStyle['background'] = 'rgba(0, 0, 0, 0.16)';
+      } else if (name === 'mdButtonRaisedClick') {
+        elementStyle['box-shadow'] = '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)';
+        surfaceStyle['background'] = 'rgba(0, 0, 0, 0.16)';
+      } else if (name === 'mdButtonCenterClick') {
+        surfaceStyle['background'] = 'rgba(0, 0, 0, 0.08)';
       }
-      var margin = -(parent_diagonal/2);
-      surface.css({
-        'top': (event.clientY - element_position.top).toString(),
-        'left': (event.clientX - element_position.left).toString(),
-        'height': parent_diagonal.toString(),
-        'width': parent_diagonal.toString(),
-        'margin-top': margin.toString(),
-        'margin-left': margin.toString(),
+      //surface.css({'background': 'rgba(255, 255, 255, 0.20)'});
+      var surface = angular.element('<div></div>');
+      surface.css(general(surfaceStyle));
+      element.css(general(elementStyle));
+      element.append(surface);
+      var resetAnimation = function() {
+        surface.css({
+          'transition': 'all 0s ease 0s',
+          'transform': 'scale(0, 0)',
+          'opacity': '0',
+        });
+      };
+      var position = function(event) {
+        var element_position = element[0].getBoundingClientRect();
+        surface.css({
+          'top': (event.clientY - element_position.top).toString(),
+          'left': (event.clientX - element_position.left).toString(),
+        });
+      };
+      var size = function() {
+        var parent_width = element[0].clientWidth;
+        var parent_height = element[0].clientHeight;
+        if ((name === 'mdButtonFlatClick') || (name === 'mdButtonRaisedClick')) {
+          var parent_diagonal = 2 * (Math.round(Math.sqrt((parent_width * parent_width) + (parent_height * parent_height))));
+          if (parent_diagonal > 2000) {
+            parent_diagonal = 2000;
+          }
+          var margin = -(parent_diagonal/2);
+        } else if (name === 'mdButtonCenterClick') {
+          var parent_diagonal = (parent_width > parent_height) ? parent_width : parent_height;
+          if (parent_diagonal > 2000) {
+            parent_diagonal = 2000;
+          }
+          var margin = 0;
+        }
+        surface.css({
+          'height': parent_diagonal.toString(),
+          'width': parent_diagonal.toString(),
+          'margin-top': margin.toString(),
+          'margin-left': margin.toString(),
+        });
+      };
+      var animate = function() {
+        if (name === 'mdButtonRaisedClick') {
+          element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
+        }
+        surface.css({
+          'transition': 'opacity 0.3s cubic-bezier(0, 0, 0.75, 1) 0s, \
+                        -webkit-transform 0.6s cubic-bezier(0, 0, 0.75, 1) 0s, \
+                        -moz-transform 0.6s cubic-bezier(0, 0, 0.75, 1) 0s, \
+                        -o-transform 0.6s cubic-bezier(0, 0, 0.75, 1) 0s, \
+                        -ms-transform 0.6s cubic-bezier(0, 0, 0.75, 1) 0s, \
+                        transform 0.6s cubic-bezier(0, 0, 0.75, 1) 0s',
+          'transform': 'scale(1, 1)',
+          'opacity': '1',
+        });
+        $timeout(function() {surface.css({'opacity': '0'});}, 300);
+        timer_delay = $timeout(function() {resetAnimation();}, 600);
+      };
+      element.on('mousedown', function(event) {
+        if (!scope.$eval(attrs.mdDisabled)) {
+          $timeout.cancel(timer_delay);
+          resetAnimation();
+          if (name === 'mdButtonFlatClick') {
+            position(event);
+            size();
+            $timeout(function() {animate();});
+          } else if (name === 'mdButtonRaisedClick') {
+            position(event);
+            size();
+            $timeout(function() {animate();});
+          } else if (name === 'mdButtonCenterClick') {
+            size();
+            $timeout(function() {animate();});
+          }
+        }
       });
-    };
-    var animate = function(opacityInterval, scaleInterval) {
-      var OI = (opacityInterval / 1000).toString();
-      var SI = (scaleInterval / 1000).toString();
-      surface.css({
-        'transition': 'opacity ' + OI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -webkit-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -moz-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -o-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      -ms-transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s, \
-                      transform ' + SI + 's cubic-bezier(0, 0, 0.75, 1) 0s',
-        'transform': 'scale(1, 1)',
-        'opacity': '1',
+      element.on('mouseup', function(event) {
+        if (!scope.$eval(attrs.mdDisabled)) {
+          if (name === 'mdButtonFlatClick') {
+          } else if (name === 'mdButtonRaisedClick') {
+            $timeout(function() {
+              element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
+            });
+          } else if (name === 'mdButtonCenterClick') {
+          }
+          $timeout(function() {scope.$applyAsync(attrs[name]);});
+        }
       });
-      $timeout(function() {surface.css({'opacity': '0'});}, opacityInterval);
-      timer_delay = $timeout(function() {resetAnimation();}, scaleInterval);
+      /*element.on('click', function(event) {
+        if (!scope.$eval(attrs.mdDisabled)) {
+          scope.$applyAsync(attrs[name]);
+        }
+      });*/
     };
-    element.on('mousedown', function(event) {
-      $timeout.cancel(timer_delay);
-      resetAnimation();
-      if ((theme === 'tracking-dark') || (theme === 'tracking-light')) {
-        position(event);
-        animate(300, 600);
-      } else {
-        animate(200, 400);
-      }
-    });
   };
   
   var mdModalEffects = function(name) {
@@ -650,7 +699,7 @@ mdUXUI.factory('mdStyle', ['$timeout', function($timeout) {
     'modal': modal,
     'page': page,
     'collections': collections,
-    'ripple': ripple,
+    'mdButtonEffects': mdButtonEffects,
     'mdModalEffects': mdModalEffects,
     'mdSpinnerEffects': mdSpinnerEffects,
     'calculateContainer': calculateContainer,
@@ -807,31 +856,9 @@ mdUXUI.directive('mdInputSelectionIcon', ['mdStyle', function(mdStyle) {
   };
 }]);
 
-mdUXUI.directive('mdButtonIconRaised', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdButtonIcon', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general({
-        'width': '48px',
-        'height': '48px',
-        'padding': '12px',
-        'overflow': 'hidden',
-        'color': 'rgba(255, 255, 255, 1)',
-        'text-shadow': '1px 2px 2px rgba(0, 0, 0, 0.54)',
-        'cursor': 'pointer',
-      }))));
-      mdStyle.ripple(element, 'icon-dark');
-      element.on('mousedown', function(event) {
-        element.css({'text-shadow': '2px 4px 4px rgba(0, 0, 0, 0.54)'});
-      });
-      element.on('mouseup', function(event) {
-        element.css({'text-shadow': '1px 2px 2px rgba(0, 0, 0, 0.54)'});
-      });
-    }
-  };
-}]);
-
-mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
-  return {
+    priority: 10,
     link: function(scope, element, attrs) {
       element.css(mdStyle.font('default', mdStyle.icon(mdStyle.general({
         'width': '48px',
@@ -841,17 +868,18 @@ mdUXUI.directive('mdButtonIconFlat', ['mdStyle', function(mdStyle) {
         'color': 'rgba(0, 0, 0, 0.54)',
         'cursor': 'pointer',
       }))));
-      mdStyle.ripple(element, 'icon-dark');
     }
   };
 }]);
 
-mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdButtonText', ['mdStyle', function(mdStyle) {
   return {
+    priority: 10,
     link: function(scope, element, attrs) {
       element.css(mdStyle.font('button', mdStyle.general({
         'min-width': '64px',
         'height': '36px',
+        'width': 'auto',
         'padding': '6px 8px',
         'margin': '6px 4px',
         'border-radius': '2px',
@@ -860,49 +888,28 @@ mdUXUI.directive('mdButtonTextFlat', ['mdStyle', function(mdStyle) {
         'color': 'rgba(0, 0, 0, 0.87)',
         'cursor': 'pointer',
       })));
-      mdStyle.ripple(element, 'tracking-dark');
     }
   };
 }]);
 
-mdUXUI.directive('mdButtonTextRaised', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdButtonCenterClick', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.font('button', mdStyle.general({
-        'min-width': '64px',
-        'height': '36px',
-        'padding': '6px 8px',
-        'margin': '6px 4px',
-        'border-radius': '2px',
-        'overflow': 'hidden',
-        'background': 'rgba(255, 255, 255, 1)',
-        'color': 'rgba(0, 0, 0, 0.87)',
-        'cursor': 'pointer',
-        'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)',
-      })));
-      mdStyle.ripple(element, 'tracking-dark');
-    }
+    priority: 5,
+    link: mdStyle.mdButtonEffects('mdButtonCenterClick')
   };
 }]);
 
-mdUXUI.directive('mdButtonComposite', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdButtonFlatClick', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      element.css(mdStyle.general({
-        'overflow': 'hidden',
-        'width': '100%',
-        'cursor': 'pointer',
-      }));
-      mdStyle.ripple(element, attrs.theme);
-    }
+    priority: 5,
+    link: mdStyle.mdButtonEffects('mdButtonFlatClick')
   };
 }]);
 
-mdUXUI.directive('mdRipple', ['mdStyle', function(mdStyle) {
+mdUXUI.directive('mdButtonRaisedClick', ['mdStyle', function(mdStyle) {
   return {
-    link: function(scope, element, attrs) {
-      mdStyle.ripple(element, attrs.mdRipple);
-    }
+    priority: 5,
+    link: mdStyle.mdButtonEffects('mdButtonRaisedClick')
   };
 }]);
 
@@ -1743,24 +1750,6 @@ mdUXUI.directive('mdClear', ['$window', 'mdStyle', function($window, mdStyle) {
   return {
     link: function(scope, element, attrs) {
       element.css({'clear': 'both'});
-    }
-  };
-}]);
-
-mdUXUI.directive('mdRaised', ['mdStyle', function(mdStyle) {
-  return {
-    priority: 10,
-    link: function(scope, element, attrs) {
-      element.on('mousedown', function(event) {
-        if (scope.$eval(attrs.mdRaised)) {
-          element.css({'box-shadow': '0 4px 8px 2px rgba(0, 0, 0, 0.26)'});
-        }
-      });
-      element.on('mouseup', function(event) {
-        if (scope.$eval(attrs.mdRaised)) {
-          element.css({'box-shadow': '0 1px 2px 0.5px rgba(0, 0, 0, 0.26)'});
-        }
-      });
     }
   };
 }]);

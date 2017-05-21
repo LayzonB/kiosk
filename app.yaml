@@ -25,11 +25,12 @@ handlers:
 - url: /
   static_files: static/index.html
   upload: static/index.html
+  secure: always
 
 - url: /app
   static_dir: static/app
+  secure: always
   
 - url: /.*
   script: main.APP
-  
-  
+  secure: always

@@ -548,15 +548,15 @@ mdApp.component('mdListItemMultiline', {
 });
 
 mdApp.component('mdListItemMultilineClickable', {
-  template: `<button md-button-composite
-                     ng-click="$ctrl.onClick({value: $ctrl.value})"
-                     ng-disabled="$ctrl.disabled"
-                     md-disabled="{{$ctrl.disabled}}"
-                     theme="tracking-dark">
-              <md-list-item-multiline>
-                <md-base ng-transclude></md-base>
-              </md-list-item-multiline>
-            </button>`,
+  template: `<md-list-cell>
+              <button md-list-cell-tile
+                      lines="4"
+                      md-button-flat-click="$ctrl.onClick({value: $ctrl.value})"
+                      ng-disabled="$ctrl.disabled"
+                      md-disabled="{{$ctrl.disabled}}"
+                      ng-transclude>
+              </button>
+            </md-list-cell>`,
   transclude: true,
   bindings: {
     disabled: '<',
@@ -567,25 +567,21 @@ mdApp.component('mdListItemMultilineClickable', {
 
 mdApp.component('mdCardsItemMultiline', {
   template: `<md-cards-cell>
-              <md-cards-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
+              <md-cards-cell-tile ng-transclude>
               </md-cards-cell-tile>
             </md-cards-cell>`,
-  transclude: true,
-  bindings: {
-    disabled: '<'
-  }
+  transclude: true
 });
 
 mdApp.component('mdCardsItemMultilineClickable', {
-  template: `<md-cards-item-multiline disabled="$ctrl.disabled">
-              <button md-button-composite
-                      ng-click="$ctrl.onClick({value: $ctrl.value})"
+  template: `<md-cards-cell>
+              <button md-cards-cell-tile
+                      md-button-raised-click="$ctrl.onClick({value: $ctrl.value})"
                       ng-disabled="$ctrl.disabled"
                       md-disabled="{{$ctrl.disabled}}"
-                      theme="tracking-dark"
                       ng-transclude>
               </button>
-            </md-cards-item-multiline>`,
+            </md-cards-cell>`,
   transclude: true,
   bindings: {
     disabled: '<',
@@ -596,26 +592,24 @@ mdApp.component('mdCardsItemMultilineClickable', {
 
 mdApp.component('mdWallItemMultiline', {
   template: `<md-wall-cell md-set-width="{{$ctrl.mdWidth}}">
-              <md-wall-cell-tile md-raised="{{!$ctrl.disabled}}" ng-transclude>
+              <md-wall-cell-tile ng-transclude>
               </md-wall-cell-tile>
             </md-wall-cell>`,
   transclude: true,
   bindings: {
-    mdWidth: '<',
-    disabled: '<'
+    mdWidth: '<'
   }
 });
 
 mdApp.component('mdWallItemMultilineClickable', {
-  template: `<md-wall-item-multiline md-width="$ctrl.mdWidth" disabled="$ctrl.disabled">
-              <button md-button-composite
-                      ng-click="$ctrl.onClick({value: $ctrl.value})"
+  template: `<md-wall-cell md-set-width="{{$ctrl.mdWidth}}">
+              <button md-wall-cell-tile
+                      md-button-raised-click="$ctrl.onClick({value: $ctrl.value})"
                       ng-disabled="$ctrl.disabled"
                       md-disabled="{{$ctrl.disabled}}"
-                      theme="tracking-dark"
                       ng-transclude>
               </button>
-            </md-wall-item-multiline>`,
+            </md-wall-cell>`,
   transclude: true,
   bindings: {
     mdWidth: '<',
@@ -663,12 +657,10 @@ mdApp.component('mdListItem', {
 });
 
 mdApp.component('mdListItemClickable', {
-  template: `<button md-button-composite
-                     ng-click="$ctrl.onClick({value: $ctrl.value})"
+  template: `<button md-button-flat-click="$ctrl.onClick({value: $ctrl.value})"
                      ng-disabled="$ctrl.disabled"
                      md-disabled="{{$ctrl.disabled}}"
-                     md-active="{{($ctrl.value === $ctrl.sample)}}"
-                     theme="tracking-dark">
+                     md-active="{{($ctrl.value === $ctrl.sample)}}">
               <md-list-item first="$ctrl.first"
                             second="$ctrl.second"
                             third="$ctrl.third"
@@ -802,11 +794,9 @@ mdApp.component('mdSelectionInput', {
                                 md-disabled="{{$ctrl.disabled}}"
                                 md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}">
                 </md-input-label>
-                <button md-button-composite
-                        ng-click="$ctrl.onClick({value: $ctrl.value})"
+                <button md-button-flat-click="$ctrl.onClick({value: $ctrl.value})"
                         ng-disabled="$ctrl.disabled"
-                        md-disabled="{{$ctrl.disabled}}"
-                        theme="tracking-dark">
+                        md-disabled="{{$ctrl.disabled}}">
                   <md-input-selection name="{{$ctrl.name}}"
                               type="text"
                               md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"
@@ -888,14 +878,12 @@ mdApp.component('mdSelectionInput', {
 });
 
 mdApp.component('mdRadioInput', {
-  template: `<button md-button-composite
-                     ng-click="$ctrl.onSelect({name: $ctrl.name, value: $ctrl.sample})"
+  template: `<button md-button-flat-click="$ctrl.onSelect({name: $ctrl.name, value: $ctrl.sample})"
                      ng-disabled="$ctrl.disabled"
                      md-disabled="{{$ctrl.disabled}}"
                      name="{{$ctrl.name}}"
                      ng-model="$ctrl.value"
-                     ng-required="$ctrl.required"
-                     theme="tracking-dark">
+                     ng-required="$ctrl.required">
               <md-list-cell>
                 <md-list-cell-tile lines="{{$ctrl.lines}}" side="left">
                   <md-primary md-content="{{$ctrl.first}}"
@@ -1000,12 +988,11 @@ mdApp.component('mdForm', {
 mdApp.component('mdCartButton', {
   template: `<md-list-item-multiline>
               <md-action side="center">
-                <button md-button-text-raised
-                        md-raised="{{!$ctrl.disabled}}"
+                <button md-button-text
+                        md-button-raised-click="$ctrl.onClick({value: $ctrl.value})"
                         ng-disabled="$ctrl.disabled"
                         md-disabled="{{$ctrl.disabled}}"
-                        md-content="{{$ctrl.name}}"
-                        ng-click="$ctrl.onClick({value: $ctrl.value})"></button>
+                        md-content="{{$ctrl.name}}"></button>
               </md-action>
             </md-list-item-multiline>`,
   bindings: {
@@ -1054,11 +1041,11 @@ mdApp.component('mdCartDelete', {
               </md-base>
               <md-base md-pad="2,4">
                 <md-action side="right">
-                  <button md-button-text-flat
-                          ng-click="$ctrl.cancel()"
+                  <button md-button-text
+                          md-button-flat-click="$ctrl.cancel()"
                           md-content="{{$ctrl.settings.modals.cart.delete.actions.cancel}}"></button>
-                  <button md-button-text-flat
-                          ng-click="$ctrl.ok()"
+                  <button md-button-text
+                          md-button-flat-click="$ctrl.ok()"
                           md-content="{{$ctrl.settings.modals.cart.delete.actions.ok}}"></button>
                 </md-action>
               </md-base>
@@ -1636,18 +1623,20 @@ mdApp.component('mdCart', {
               <md-app-bar>
                 <md-app-icon icon="'shopping_cart'"></md-app-icon>
                 <md-actions side="left" lines="4">
-                  <button md-button-icon-flat
-                          md-content="arrow_back"
+                  <button md-icon
+                          md-pad="12"
+                          md-button-center-click="$ctrl.closeCart()"
                           ng-disabled="$ctrl.disabled"
                           md-disabled="{{$ctrl.disabled}}"
-                          ng-click="$ctrl.closeCart()"></button>
+                          md-content="arrow_back"></button>
                 </md-actions>
                 <md-actions side="right" lines="4" ng-if="(($ctrl.step > 0) && ($ctrl.step < 5))">
-                  <button md-button-icon-flat
-                          md-content="delete"
+                  <button md-icon
+                          md-pad="12"
+                          md-button-center-click="$ctrl.openDelete()"
                           ng-disabled="$ctrl.disabled"
                           md-disabled="{{$ctrl.disabled}}"
-                          ng-click="$ctrl.openDelete()"></button>
+                          md-content="delete"></button>
                 </md-actions>
               </md-app-bar>
               <md-cart-empty settings="$ctrl.settings"
@@ -1859,11 +1848,17 @@ mdApp.component('mdSkuQuantity', {
                          ng-step="$ctrl.step"
                          ng-change="$ctrl.qchange()">
                 <md-actions side="left">
-                  <button md-button-icon-flat md-content="remove_shopping_cart" ng-click="$ctrl.remove()"
+                  <button md-icon
+                          md-pad="12"
+                          md-button-center-click="$ctrl.remove()"
+                          md-content="remove_shopping_cart"
                           md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
                 </md-actions>
                 <md-actions side="right">
-                  <button md-button-icon-flat md-content="add_shopping_cart" ng-click="$ctrl.add()"
+                  <button md-icon
+                          md-pad="12"
+                          md-button-center-click="$ctrl.add()"
+                          md-content="add_shopping_cart"
                           md-error="{{($ctrl.input && $ctrl.input.$dirty && $ctrl.input.$invalid)}}"></button>
                 </md-actions>
             </md-list-cell>`,
@@ -2033,13 +2028,17 @@ mdApp.component('mdProductInfo', {
 mdApp.component('mdProductImageSlider', {
   template: `<md-carousel-frame md-get-height="-124" md-set-height="{{mdGetHeight}}" md-get-width>
               <md-carousel-action side="left">
-                <button md-button-composite theme="tracking-dark" ng-click="$ctrl.rewind()">
-                  <md-base md-icon="avatar" md-pad="12" md-content="chevron_left"></md-bsae>
+                <button md-icon="avatar"
+                        md-pad="12"
+                        md-button-center-click="$ctrl.rewind()"
+                        md-content="chevron_left">
                 </button>
               </md-carousel-action>
               <md-carousel-action side="right">
-                <button md-button-composite theme="tracking-dark" ng-click="$ctrl.forward()">
-                  <md-base md-icon="avatar" md-pad="12" md-content="chevron_right"></md-bsae>
+                <button md-icon="avatar"
+                        md-pad="12"
+                        md-button-center-click="$ctrl.forward()"
+                        md-content="chevron_right">
                 </button>
               </md-carousel-action>
               <md-carousel index="{{$ctrl.images.length}}" position="{{$ctrl.position}}" ng-swipe-left="$ctrl.forward()" ng-swipe-right="$ctrl.rewind()">
@@ -2100,7 +2099,10 @@ mdApp.component('mdProductImageSlider', {
 mdApp.component('mdProduct', {
   template: `<md-full-screen-fade active="$ctrl.dialog" on-close="$ctrl.onExit()">
               <md-actions side="left" lines="4">
-                <button md-button-icon-flat md-content="close" ng-click="$ctrl.closeProduct()"></button>
+                <button md-icon
+                        md-pad="12"
+                        md-button-center-click="$ctrl.closeProduct()"
+                        md-content="close"></button>
               </md-actions>
               <md-page vertical-scroll="scroll" ng-if="$ctrl.sku">
                 <md-form name="'productForm'">
@@ -2297,7 +2299,10 @@ mdApp.component('mdHome', {
                              img-alt="$ctrl.settings.account.business_name">
                 </md-app-logo>
                 <md-actions side="right" lines="4">
-                  <button md-button-icon-flat md-content="shopping_cart" ng-click="$ctrl.openCart()"></button>
+                  <button md-icon
+                          md-pad="12"
+                          md-button-center-click="$ctrl.openCart()"
+                          md-content="shopping_cart"></button>
                 </md-actions>
               </md-app-bar>
               <md-products settings="$ctrl.settings"
