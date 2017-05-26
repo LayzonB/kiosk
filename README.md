@@ -1,7 +1,7 @@
 # KIOSK for Stripe:
 
 - was developed using latest technologies and applying best practices for web application development and design;
-- is a single page web app that extends a Stripe account with a standalone shopping cart;
+- is a single-page web app (SPA) that extends a Stripe account with a standalone shopping cart;
 - operates autonomously via Stripe API to reduce seller administrative overhead;
 - relies on Stripe products and orders, in addition to payments, to operate;
 - was specifically optimised for shippable products;
